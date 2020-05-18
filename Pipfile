@@ -1,0 +1,15 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[packages]
+boto3 = ">=1.9"
+typing-extensions = "*"
+
+[dev-packages]
+pytest = "~=5.0"
+mypy = ">=0.770"
+pylint = "*"
+
+[requires]
+python_version = "3.7"

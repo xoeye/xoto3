@@ -1,0 +1,14 @@
+[BASIC]
+max-line-length=120
+good-names=logger,_,i,j,k,__logger
+
+# Regular expression matching correct method names. Overrides method-naming style
+method-rgx=(([a-z_][a-z0-9_]{2,})|(_[a-z0-9_]*)|(__[a-z][a-z0-9_]+__))$
+
+[MESSAGES CONTROL]
+disable=
+	invalid-name,
+	too-few-public-methods,
+ 	bad-continuation,
+	logging-fstring-interpolation,
+	missing-docstring,

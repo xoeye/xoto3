@@ -1,0 +1,47 @@
+---
+fail_fast: true
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.2.3
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: flake8
+      - id: check-case-conflict
+      - id: check-json
+      - id: mixed-line-ending
+      - id: check-merge-conflict
+
+  - repo: https://github.com/prettier/prettier
+    rev: 1.18.2
+    hooks:
+      - id: prettier
+        exclude: .*\.html
+
+  - repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+      - id: black
+        language_version: python3.7
+        args:
+          - --line-length=100
+
+  - repo: local
+    hooks:
+      - id: mypy-pipenv
+        name: mypy-pipenv
+        entry: scripts/pipenv_runner.py mypy
+        language: system
+        types: [python]
+        args:
+          - --show-traceback
+          - --ignore-missing-imports
+          - --check-untyped-defs
+      - id: pylint-pipenv
+        name: pylint-pipenv
+        entry: scripts/precommit_pylint.py
+        language: system
+        types: [python]
+        args:
+          - --rcfile=.pylintrc
