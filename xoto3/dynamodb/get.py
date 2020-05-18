@@ -33,14 +33,22 @@ class KeyItemPair(ty.NamedTuple):
     item: DynamoItem  # if empty, the key was not found
 
 
-def BatchGetItems(
-    table: TableResource, keys: ty.Iterable[ItemKey], **kwargs
+def BatchGetItem(
+        table: TableResource,
+        keys: ty.Iterable[ItemKey],
+        *,
+        dynamodb_resource=None,
+        thread_pool=None,
+        **kwargs,
 ) -> Iterable[KeyItemPair]:
-    """A potentially more pleasant interface for BatchGetItemsReturnFailures.
+    """Abstracts threading, pagination, and limited deduplication for BatchGetItem.
 
-    You pass in an iterable of standard ItemKeys, e.g. `dict(id='petros')`,
-    and get back an iterable of KeyItemPairs, e.g.
-    `KeyItemPair(key={'id': 'petros'}, val={'id': 'petros', 'age': 88})`.
+    A slightly lower-level interface is provided as BatchGetItemTupleKeys.
+
+    You pass in an iterable of standard boto3 DynamoDB ItemKeys,
+    e.g. `dict(id='petros')`, and get back an iterable of
+    KeyItemPairs, e.g.  `KeyItemPair(key={'id': 'petros'}, val={'id':
+    'petros', 'age': 88})`.
 
     If all you want is the non-empty items, wrap this call in the
     provided `items_only` utility.
@@ -62,16 +70,17 @@ def BatchGetItems(
 
     return (
         key_tuple_item_pair_to_key_item_pair(ktip)
-        for ktip in BatchGetItemsReturnFailures(
+        for ktip in BatchGetItemTupleKeys(
             table.name, (key_translator(key) for key in keys), canonical_key_attrs_order, **kwargs
         )
     )
 
 
-def BatchGetItemsReturnFailures(
+def BatchGetItemTupleKeys(
     table_name: str,
-    key_value_tuples: Iterable[tuple],
+    key_value_tuples: Iterable[Tuple[KeyAttributeType, ...]],
     key_attr_names: ty.Sequence[str] = ("id",),
+        *,
     dynamodb_resource=None,
     thread_pool=None,
     **kwargs,
@@ -149,7 +158,7 @@ def BatchGetItemsReturnFailures(
         # single-threaded serial batches
         for key_values_batch_set in batches_of_100_iter:
             results = _get_single_batch(
-                table_name, key_values_batch_set, key_attr_names, ddbr, **kwargs
+                table_name, key_values_batch_set, key_attr_names, dynamodb_resource=ddbr, **kwargs
             )
             for key_value_tuple, item in results:
                 total_count += 1
@@ -165,8 +174,9 @@ def BatchGetItemsReturnFailures(
 
 def _get_single_batch(
     table_name: str,
-    key_values_batch: Set[Tuple[str, ...]],  # up to 100
+    key_values_batch: Set[Tuple[KeyAttributeType, ...]],  # up to 100
     key_attr_names: ty.Sequence[str] = ("id",),
+        *,
     dynamodb_resource=None,
     **kwargs,
 ) -> List[KeyTupleItemPair]:
