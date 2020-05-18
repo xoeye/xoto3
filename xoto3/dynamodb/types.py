@@ -1,14 +1,14 @@
-"""These are partial types for parts of boto3 itself"""
+"""Basic types for DynamoDB data and operations"""
 import typing as ty
 from decimal import Decimal
 from typing_extensions import TypedDict, Literal
+
 
 KeyAttributeType = ty.Union[int, str, float, Decimal]
 ItemKey = ty.Mapping[str, KeyAttributeType]
 
 AttrInput = ty.Mapping[str, ty.Any]
-DynamoInputItem = AttrInput
-
+InputItem = AttrInput
 
 SchemaKeyAttibute = TypedDict("SchemaKeyAttibute", {"AttributeName": str})
 
@@ -42,7 +42,7 @@ class TableResource:
     def update_item(self, TableName: str, Key: ItemKey, **kwargs) -> dict:
         ...
 
-    def put_item(self, Item: DynamoInputItem, **kwargs) -> dict:
+    def put_item(self, Item: InputItem, **kwargs) -> dict:
         ...
 
     def batch_writer(self, overwrite_by_pkeys: ty.Optional[ty.List[str]]) -> ty.ContextManager:
@@ -56,3 +56,9 @@ class TableResource:
 
     def scan(self, *args, **kwargs) -> dict:
         ...
+
+
+AttrDict = ty.Dict[str, ty.Any]
+Item = AttrDict
+
+KeyTuple = ty.Tuple[str, ...]
