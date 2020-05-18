@@ -34,14 +34,14 @@ except Exception:  # pylint: disable=broad-except  # this is okay because gettin
     SCRIPT_NAME = "SSM Params"
 
 
-SSM_CLIENT = tlls("client", "ssm")
+_SSM_CLIENT = tlls("client", "ssm")
 
 
 def delete(Name: str, ssm=None) -> bool:
     """Returns True if parameter was deleted,
     False if it didn't exist,
     and raises for other errors"""
-    ssm = ssm or SSM_CLIENT()
+    ssm = ssm or _SSM_CLIENT()
     try:
         ssm.delete_parameter(Name=Name)
     except ClientError as ce:
@@ -62,7 +62,7 @@ def get(Name: str, default=None, error=True, ssm=None, **kwargs) -> str:
     ParameterNotFound from raising an exception - all other boto3
     ClientErrors will always raise.
     """
-    ssm = ssm or SSM_CLIENT()
+    ssm = ssm or _SSM_CLIENT()
 
     try:
         param = ssm.get_parameter(Name=Name, **kwargs)
@@ -91,7 +91,7 @@ def put(Name: str, Value: str, Type: ParameterType = "String", Overwrite=True, s
 
     Raises all ClientErrors to the caller.
     """
-    ssm = ssm or SSM_CLIENT()
+    ssm = ssm or _SSM_CLIENT()
 
     if len(Value) > _MAX_PARAM_SIZE:
         _put_multipart_param(ssm, Name, Value, Type)
