@@ -1,27 +1,28 @@
-from typing import Tuple, Hashable, Callable, Any, Mapping, Set, Optional, Sequence
+from typing import Tuple, Hashable, Callable, Any, Mapping, Set, Optional
 
 
-KeyPath = Tuple[Hashable, ...]
 SimpleTransform = Callable[[Any], Any]
-PathCallback = Callable[[KeyPath, Any], bool]
+KeyPath = Tuple[Hashable, ...]
+PathCallback = Callable[[KeyPath], bool]
 
 
 def map_recursively(
-        transform: SimpleTransform,
-        obj: Any,
-        *,
-        path: tuple = (),
-        path_callback: Optional[PathCallback] = None
+    transform: SimpleTransform,
+    obj: Any,
+    *,
+    path: KeyPath = (),
+    path_callback: Optional[PathCallback] = None
 ) -> Any:
     """Does a depth-first walk of the object, calling the transform as a
-    preorder operation before then recursing into mappings (dicts),
-    lists, tuples, and sets, rendering a new corresponding builtin
-    instance for each.
+    preorder operation before then recursing into mappings, lists,
+    tuples, and sets, rendering a new corresponding builtin instance
+    for each.
 
     Only applies the first recursive transform that matches the type
     of the provided object.
 
-    Does not preserve subtypes of Set or Mapping.
+    Does not preserve subtypes of Set or Mapping (you get builtin sets
+    and dicts).
 
     Does not natively support iterables that are not tuples or lists,
     because (for instance) consuming generators is likely to lead to
@@ -35,10 +36,11 @@ def map_recursively(
     path immediately _prior_ to each call to your transform, and which
     returns True if you wish the recursion to short-circuit
     immediately _after_ the transform.
+
     """
     stop = False
     if path_callback:
-        stop = path_callback(path, obj)
+        stop = path_callback(path)
     obj = transform(obj)
     if stop:
         return obj
@@ -56,14 +58,15 @@ def map_recursively(
         }
     if isinstance(obj, list):
         return [
-            map_recursively(transform, item, path=path, path_callback=path_callback)
-            for item in obj
+            map_recursively(transform, item, path=path, path_callback=path_callback) for item in obj
         ]
     if isinstance(obj, tuple):
-        return tuple((
-            map_recursively(transform, item, path=path, path_callback=path_callback)
-            for item in obj
-        ))
+        return tuple(
+            (
+                map_recursively(transform, item, path=path, path_callback=path_callback)
+                for item in obj
+            )
+        )
 
     return obj
 
@@ -78,18 +81,19 @@ def tuple_starts_with(a: tuple, b: tuple) -> bool:
     return True
 
 
-
 class PathedTransform:
     """For use with map_recursively"""
 
-    def __init__(self, transform: SimpleTransform, target_path: Sequence[Hashable]):
+    def __init__(self, transform: SimpleTransform, target_path: KeyPath):
         self.transform = transform
         self.target_path = target_path
 
-    def path_callback(self, path: Sequence[Hashable], *_args):
+    def path_callback(self, path: KeyPath) -> bool:
         self.current_path = path
         # stop if not part of target path, or if we've reached the full path
-        return not tuple_starts_with(self.target_path, path) or self.current_path == self.target_path
+        return (
+            not tuple_starts_with(self.target_path, path) or self.current_path == self.target_path
+        )
 
     def __call__(self, obj: Any) -> Any:
         if self.current_path == self.target_path:
