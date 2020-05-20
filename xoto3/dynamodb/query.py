@@ -5,11 +5,8 @@ All of these functional query builders assume that you will start with single_pa
 from typing import Dict, Any, Optional
 from copy import deepcopy
 
-from .types import Index, KeyAttributeType
+from .types import Index, KeyAttributeType, TableQuery
 from .utils.index import hash_key_name, range_key_name
-
-
-TableQuery = Dict[str, Any]
 
 
 def single_partition(index: Index, partition_value: KeyAttributeType) -> TableQuery:

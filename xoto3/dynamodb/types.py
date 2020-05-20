@@ -72,3 +72,5 @@ AttrDict = ty.Dict[str, ty.Any]
 Item = AttrDict
 
 KeyTuple = ty.Tuple[KeyAttributeType, ...]
+
+TableQuery = ty.Dict[str, ty.Any]
