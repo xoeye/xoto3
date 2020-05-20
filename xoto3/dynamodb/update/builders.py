@@ -1,7 +1,7 @@
 import typing as ty
 from copy import deepcopy
 
-from .conditions import item_exists, and_condition
+from xoto3.dynamodb.conditions import item_exists, and_condition
 from xoto3.dynamodb.exceptions import DynamoDbException
 from xoto3.dynamodb.prewrite import dynamodb_prewrite
 from xoto3.dynamodb.types import ItemKey, AttrDict

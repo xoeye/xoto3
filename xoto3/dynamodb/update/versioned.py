@@ -65,8 +65,8 @@ def versioned_diffed_update_item(
     item_transformer: ItemTransformer,
     item_id: ItemKey,
     *,
-    item_getter: ItemGetter = strongly_consistent_get_item,
-    item_updater: ItemUpdater = UpdateItem,
+    get_item: ItemGetter = strongly_consistent_get_item,
+    update_item: ItemUpdater = UpdateItem,
     max_attempts_before_failure: int = DEFAULT_MAX_ATTEMPTS_BEFORE_FAILURE,
     item_version_key: str = "item_version",
     last_written_key: str = "last_written_at",
@@ -74,18 +74,18 @@ def versioned_diffed_update_item(
 ) -> Item:
     """Performs an item read-transform-write loop until there are no intervening writes.
 
-    By swapping out the item_getter implementation, you can repurpose
+    By swapping out the get_item implementation, you can repurpose
     this from only allowing updates to existing items to a
-    transactional create. Your item_getter must simply return an empty
+    transactional create. Your get_item must simply return an empty
     dict if the item does not already exist.  The built-in
-    item_getter, strongly_consistent_get_item, raises an Exception if
+    get_item, strongly_consistent_get_item, raises an Exception if
     the item is not found, making the default behavior update-only.
 
     Another way to repurpose the general transactional behavior
-    provided here is with make_single_reuse_item_getter: if you
+    provided here is with make_single_reuse_get_item: if you
     already have the item in question (e.g. because of a BatchGet) and
     want to make a transactional update to it without incurring a
-    useless fetch, you can swap out item_getter for a closure created
+    useless fetch, you can swap out get_item for a closure created
     by that function that will return your existing item once, but
     will revert to fetching if the transaction fails because of an
     intervening write.
@@ -94,7 +94,7 @@ def versioned_diffed_update_item(
     max_attempts_before_failure = int(max(1, max_attempts_before_failure))
     while attempt < max_attempts_before_failure:
         attempt += 1
-        item = item_getter(table, item_id)
+        item = get_item(table, item_id)
         cur_item_version = item.get(item_version_key, 0)
 
         logger.debug(f"Current item version is {cur_item_version}")
@@ -122,7 +122,7 @@ def versioned_diffed_update_item(
 
         try:
             # write if no intervening updates
-            item_updater(
+            update_item(
                 table,
                 item_id,
                 **select_attributes_for_set_and_remove(item_diff),
@@ -190,9 +190,7 @@ def versioned_item_expression(
     )
 
 
-def make_prefetched_item_getter(
-    item: Item, refetch_getter: ItemGetter = strongly_consistent_get_item
-):
+def make_prefetched_get_item(item: Item, refetch_getter: ItemGetter = strongly_consistent_get_item):
     """Useful for versioned updates where you've already fetched the item
     once and in most cases would not need to fetch again before running
     the update, but would want a versioned update to retry with a fresh
@@ -200,7 +198,7 @@ def make_prefetched_item_getter(
     """
     used = False
 
-    def prefetched_item_getter(table, key: ItemKey) -> Item:
+    def prefetched_get_item(table, key: ItemKey) -> Item:
         nonlocal used
 
         if not used:
@@ -208,4 +206,4 @@ def make_prefetched_item_getter(
             return item
         return refetch_getter(table, key)
 
-    return prefetched_item_getter
+    return prefetched_get_item
