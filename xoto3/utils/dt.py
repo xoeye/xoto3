@@ -11,9 +11,10 @@ _UTC_TZ_HRS = "+00:00"
 
 
 def iso8601strict(dt: datetime) -> str:
-    """This works around the twin bugs in vanilla Python isoformat which
-    fail to postpend the 'Z' suffix, and do not print the microseconds
-    if the microseconds happen to be 0.
+    """This works around the twin bugs in vanilla Python isoformat, which
+    1) fails to postpend the 'Z' suffix, and 2) does not include the
+    microseconds if the microseconds happen to be 0, both of which
+    make isoformat useless for strict lexicographic sorting.
     """
     if dt.tzinfo:
         dt = dt.astimezone(timezone.utc)
