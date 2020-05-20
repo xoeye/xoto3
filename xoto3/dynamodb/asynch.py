@@ -11,13 +11,13 @@ import asyncio
 from asyncio import Queue, get_event_loop
 
 from xoto3.lazy import tlls
-from .get import BatchGetItemsReturnFailures
+from .get import BatchGetItemTupleKeys
 
 
 logger = logging.getLogger(__name__)
 
 
-DYNAMODB_RESOURCE = tlls('resource', 'dynamodb')
+DYNAMODB_RESOURCE = tlls("resource", "dynamodb")
 
 
 # When running in a Lambda, the round-trip latency to Dynamo is
@@ -50,8 +50,8 @@ def _batch_get_processor(
     key_attr_names: ty.Sequence[str] = ("id",),
     dynamo_db_resource=None,
 ) -> ty.List[dict]:
-    resp = BatchGetItemsReturnFailures(
-        table_name, item_key_tuples, key_attr_names, dynamo_db_resource
+    resp = BatchGetItemTupleKeys(
+        table_name, item_key_tuples, key_attr_names, dynamodb_resource=dynamo_db_resource
     )
     indexed_by_kt = {res[0]: res[1] for res in resp}
     return [indexed_by_kt[key_tuple] for key_tuple in item_key_tuples]
@@ -170,9 +170,7 @@ def cancel_all_dynamo_fulfillers():
 
 
 async def get_item(
-    table_name: str,
-    primary_key_tuple: tuple,
-    primary_key_attr_names: ty.Sequence[str] = ("id",),
+    table_name: str, primary_key_tuple: tuple, primary_key_attr_names: ty.Sequence[str] = ("id",)
 ) -> dict:
     """Performs Dynamo request batching behind the scenes.
 

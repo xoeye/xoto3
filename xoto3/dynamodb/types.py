@@ -18,9 +18,19 @@ class KeyAndType(TypedDict):
     KeyType: ty.Union[Literal["HASH"], Literal["RANGE"]]
 
 
-class DynamoIndex(TypedDict):
+KeySchema = ty.List[KeyAndType]
+PrimaryIndex = KeySchema
+
+
+class SecondaryIndex(TypedDict):
     IndexName: str
-    KeySchema: ty.List[KeyAndType]
+    KeySchema: KeySchema
+
+
+Index = ty.Union[PrimaryIndex, SecondaryIndex]
+
+
+# pylint: disable=unused-argument,no-self-use
 
 
 class TableResource:
@@ -30,11 +40,11 @@ class TableResource:
 
     name: str
 
-    key_schema: ty.List[SchemaKeyAttibute]
+    key_schema: KeySchema
 
-    global_secondary_indexes: ty.Optional[ty.List[DynamoIndex]]
+    global_secondary_indexes: ty.Optional[ty.List[SecondaryIndex]]
 
-    local_secondary_indexes: ty.Optional[ty.List[DynamoIndex]]
+    local_secondary_indexes: ty.Optional[ty.List[SecondaryIndex]]
 
     def get_item(self, Key: ItemKey, **kwargs) -> dict:
         ...
@@ -61,4 +71,4 @@ class TableResource:
 AttrDict = ty.Dict[str, ty.Any]
 Item = AttrDict
 
-KeyTuple = ty.Tuple[str, ...]
+KeyTuple = ty.Tuple[KeyAttributeType, ...]

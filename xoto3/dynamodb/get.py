@@ -7,11 +7,11 @@ import os
 from logging import getLogger
 
 from xoto3.lazy import Lazy, tlls
-from xoto3.types import TableResource
 from xoto3.utils.backoff import backoff
 from xoto3.utils.iter import grouper_it
+from xoto3.dynamodb.types import TableResource
 
-from .types import DynamoItem, KeyTuple, ItemKey, KeyAttributeType
+from .types import Item, KeyTuple, ItemKey, KeyAttributeType
 
 
 logger = getLogger(__name__)
@@ -22,24 +22,24 @@ __DEFAULT_THREADPOOL: Lazy[ty.Any] = Lazy(
     lambda: ThreadPool(_THREADPOOL_SIZE) if _THREADPOOL_SIZE else None
 )
 
-_DYNAMODB_RESOURCE = tlls('resource', 'dynamodb')
+_DYNAMODB_RESOURCE = tlls("resource", "dynamodb")
 
 
-KeyTupleItemPair = Tuple[KeyTuple, DynamoItem]
+KeyTupleItemPair = Tuple[KeyTuple, Item]
 
 
 class KeyItemPair(ty.NamedTuple):
     key: ItemKey
-    item: DynamoItem  # if empty, the key was not found
+    item: Item  # if empty, the key was not found
 
 
 def BatchGetItem(
-        table: TableResource,
-        keys: ty.Iterable[ItemKey],
-        *,
-        dynamodb_resource=None,
-        thread_pool=None,
-        **kwargs,
+    table: TableResource,
+    keys: ty.Iterable[ItemKey],
+    *,
+    dynamodb_resource=None,
+    thread_pool=None,
+    **kwargs,
 ) -> Iterable[KeyItemPair]:
     """Abstracts threading, pagination, and limited deduplication for BatchGetItem.
 
@@ -80,7 +80,7 @@ def BatchGetItemTupleKeys(
     table_name: str,
     key_value_tuples: Iterable[Tuple[KeyAttributeType, ...]],
     key_attr_names: ty.Sequence[str] = ("id",),
-        *,
+    *,
     dynamodb_resource=None,
     thread_pool=None,
     **kwargs,
@@ -137,7 +137,7 @@ def BatchGetItemTupleKeys(
     if not dynamodb_resource and thread_pool:
         logger.debug("Sending batches to thread pool")
 
-        def partial_get_single_batch(key_values_batch: Set[Tuple[str, ...]]):
+        def partial_get_single_batch(key_values_batch: Set[Tuple[KeyAttributeType, ...]]):
             return _get_single_batch(
                 table_name,
                 key_values_batch,
@@ -176,7 +176,7 @@ def _get_single_batch(
     table_name: str,
     key_values_batch: Set[Tuple[KeyAttributeType, ...]],  # up to 100
     key_attr_names: ty.Sequence[str] = ("id",),
-        *,
+    *,
     dynamodb_resource=None,
     **kwargs,
 ) -> List[KeyTupleItemPair]:
@@ -240,7 +240,7 @@ def _kv_tuple_to_key(kv_tuple, key_names):
     return {key_names[i]: kv_tuple[i] for i in range(len(key_names))}
 
 
-def items_only(key_item_pairs: ty.Iterable[KeyItemPair]) -> ty.Iterable[DynamoItem]:
+def items_only(key_item_pairs: ty.Iterable[KeyItemPair]) -> ty.Iterable[Item]:
     """Use with BatchGetItemsByKeys if you just want the items that were
     found instead of the full iterable of all the keys you requested
     alongside their respective item or empty dict if the item wasn't
