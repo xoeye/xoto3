@@ -113,7 +113,7 @@ def _tuple_starts_with(a: tuple, b: tuple) -> bool:
     return True
 
 
-def make_path_stop_transform(transform: SimpleTransform, target_path: KeyPath) -> PathTransform:
+def make_path_stop_transform(target_path: KeyPath, transform: SimpleTransform) -> PathTransform:
     def path_tx(item: Any, path: KeyPath) -> Tuple[Any, bool]:
         stop = not _tuple_starts_with(target_path, path) or path == target_path
         # stop if not part of target path, or if we've reached the full path
@@ -124,7 +124,7 @@ def make_path_stop_transform(transform: SimpleTransform, target_path: KeyPath) -
     return path_tx
 
 
-def make_path_only_transform(transform: SimpleTransform, target_path: KeyPath) -> PathTransform:
+def make_path_only_transform(target_path: KeyPath, transform: SimpleTransform) -> PathTransform:
     def path_only_tx(item: Any, path: KeyPath) -> Tuple[Any, bool]:
         if path == target_path:
             return transform(item), False

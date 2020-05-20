@@ -71,7 +71,7 @@ def dynamodb_prewrite_str_in_dict_transform(d: dict) -> dict:
 REQUIRED_TRANSFORMS: ty.Mapping[type, ty.Callable] = {
     float: float_to_decimal,
     # boto3 will yell if you provide floats instead of Decimals
-    dict: make_path_only_transform(dynamodb_prewrite_str_in_dict_transform, ()),
+    dict: make_path_only_transform((), dynamodb_prewrite_str_in_dict_transform),
     tuple: list,
     # boto3 expects lists rather than tuples
     set: dynamodb_prewrite_set_transform,
@@ -81,8 +81,8 @@ REQUIRED_TRANSFORMS: ty.Mapping[type, ty.Callable] = {
 
 STRONGLY_RECOMMENDED_TRANSFORMS: ty.Mapping[type, ty.Callable] = {
     dict: compose(
-        make_path_only_transform(strip_falsy, ()),
-        make_path_only_transform(dynamodb_prewrite_str_in_dict_transform, ()),
+        make_path_only_transform((), strip_falsy),
+        make_path_only_transform((), dynamodb_prewrite_str_in_dict_transform),
     ),
     # in many if not most cases, it's best not to store top-level attributes with falsy values.
     # this makes sparse secondary indexes possible and 'on by default'.

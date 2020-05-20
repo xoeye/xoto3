@@ -32,7 +32,7 @@ def test_map_tree_type_dispatched_tx():
 
 
 def test_path_stop_transform():
-    tp = make_path_stop_transform(str, ("a", "four"))
+    tp = make_path_stop_transform(("a", "four"), str)
 
     inp = dict(
         a=[dict(four=[1, 2, 3]), [8, 8, dict(four=(3, 3, 3))]], b=[2, 4, 6], c=dict(four=[2, 3, 4])
@@ -46,7 +46,7 @@ def test_path_stop_transform():
 
 
 def test_path_only_transform():
-    tp = make_path_only_transform(str, ("a", "four"))
+    tp = make_path_only_transform(("a", "four"), str)
 
     inp = dict(
         a=[dict(four=[1, 2, 3]), [8, 8, dict(four=(3, 3, 3))]], b=[2, 4, 6], c=dict(four=[2, 3, 4])
@@ -60,7 +60,7 @@ def test_path_only_transform():
 
 
 def test_type_dispatched_path_transform():
-    pathed_int_tx = make_path_only_transform(int, ("floats_to_int",))
+    pathed_int_tx = make_path_only_transform(("floats_to_int",), int)
     typed_tx = type_dispatched_transform({float: pathed_int_tx, int: str})
 
     o = dict(floats_to_int=[1.2, 2.3, 3.4], ints_to_str=[1, 2, 3], other_floats=(1.2, 2.2))
