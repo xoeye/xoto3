@@ -3,10 +3,10 @@ from typing import Any
 
 def strip_falsy(d: dict) -> dict:
     """Strip falsy, but don't strip integer value 0"""
-    return {key: val for key, val in d.items() if dynamo_truthy(val)}
+    return {key: val for key, val in d.items() if dynamodb_truthy(val)}
 
 
-def dynamo_truthy(val: Any) -> bool:
+def dynamodb_truthy(val: Any) -> bool:
     """Attribute values that do not pass this test should generally not be
     stored in DynamoDB - instead, their attribute key should be
     removed from the object altogether.
@@ -21,11 +21,3 @@ def dynamo_truthy(val: Any) -> bool:
     every secondary index will be a sparse index by default.
     """
     return bool(val) or (val == 0 and not isinstance(val, bool))
-
-
-def dynamo_meaningful_value_update(old_val: Any, new_val: Any) -> bool:
-    """If both an existing/old and a new value are 'effectively NULL' from
-    a Dymamo perspective, then this does not represent a meaningful update
-    to the database and may be dropped.
-    """
-    return (dynamo_truthy(old_val) or dynamo_truthy(new_val)) and new_val != old_val

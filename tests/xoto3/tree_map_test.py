@@ -7,7 +7,7 @@ from xoto3.tree_map import (
     make_path_only_transform,
     compose,
 )
-from xoto3.dynamodb.utils.decimal import decimal_to_number
+from xoto3.utils.dec import decimal_to_number
 
 
 def test_map_tree_idents():

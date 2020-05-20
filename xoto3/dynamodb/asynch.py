@@ -11,7 +11,7 @@ import asyncio
 from asyncio import Queue, get_event_loop
 
 from xoto3.lazy import tlls
-from .get import BatchGetItemTupleKeys
+from .batch_get import BatchGetItemTupleKeys
 
 
 logger = logging.getLogger(__name__)
