@@ -1,9 +1,8 @@
 from typing import Dict, Any, Set
-from typing_extensions import TypedDict
 from logging import getLogger
+from typing_extensions import TypedDict
 
 from xoto3.dynamodb.types import InputItem, AttrDict, AttrInput
-from xoto3.dynamodb.prewrite import dynamodb_prewrite
 from xoto3.dynamodb.utils.truth import dynamodb_truthy
 
 
@@ -25,8 +24,6 @@ def build_update_diff(old: InputItem, new: InputItem) -> AttrDict:
     of how Dynamo works.
 
     """
-    old = dynamodb_prewrite(old)
-    new = dynamodb_prewrite(new)
     diff: Dict[str, Any] = dict()
     for key in new.keys():
         new_val = new[key]
