@@ -17,7 +17,10 @@ from xoto3.utils.dec import float_to_decimal
 
 from .types import InputItem, Item
 from .utils.truth import strip_falsy
-from .utils.serde import dynamodb_prewrite_set_transform, dynamodb_prewrite_str_in_dict_transform
+from .utils.serde import (
+    dynamodb_prewrite_set_transform,
+    dynamodb_prewrite_empty_str_in_dict_to_null_transform,
+)
 
 
 logger = getLogger(__name__)
@@ -26,7 +29,9 @@ logger = getLogger(__name__)
 REQUIRED_TRANSFORMS: ty.Mapping[type, ty.Callable] = {
     float: float_to_decimal,
     # boto3 will yell if you provide floats instead of Decimals
-    dict: make_path_only_transform((), dynamodb_prewrite_str_in_dict_transform),
+    dict: make_path_only_transform((), dynamodb_prewrite_empty_str_in_dict_to_null_transform),
+    # technically only attributes used in indexes must have empty strings replaced with null,
+    # but without inspecting the table it's impossible to know which those are.
     tuple: list,
     # boto3 expects lists rather than tuples
     set: dynamodb_prewrite_set_transform,
@@ -34,12 +39,18 @@ REQUIRED_TRANSFORMS: ty.Mapping[type, ty.Callable] = {
     # intended to cover some of them for you.
 }
 
+_ACTIVE_UPDATE_TRANSFORM: SimpleTransform = partial(
+    map_tree, type_dispatched_transform(REQUIRED_TRANSFORMS)
+)
+# when performing an update, we always need to run this transform no matter what,
+# or boto3 or DynamoDB will be guaranteed to break on these types.
+
 STRONGLY_RECOMMENDED_TRANSFORMS: ty.Mapping[type, ty.Callable] = {
     dict: compose(
         make_path_only_transform((), strip_falsy),
-        make_path_only_transform((), dynamodb_prewrite_str_in_dict_transform),
+        make_path_only_transform((), dynamodb_prewrite_empty_str_in_dict_to_null_transform),
     ),
-    # in many if not most cases, it's best not to store top-level attributes with falsy values.
+    # in many if not most cases, it's best not to store top-level attributes with falsy values at all.
     # this makes sparse secondary indexes possible and 'on by default'.
 }
 

@@ -8,7 +8,7 @@ from logging import getLogger
 
 from xoto3.lazy import Lazy, tlls
 from xoto3.utils.backoff import backoff
-from xoto3.utils.iter import grouper_it
+from xoto3.utils.iter import grouper_it, peek
 from xoto3.dynamodb.types import TableResource
 
 from .types import Item, KeyTuple, ItemKey, KeyAttributeType
@@ -126,7 +126,14 @@ def BatchGetItemTupleKeys(
     """
 
     # the set creation does de-duplication for us
-    batches_of_100_iter = (set(batch) for batch in grouper_it(100, key_value_tuples))
+    is_empty, _, batches_of_100_iter = peek(
+        (set(batch) for batch in grouper_it(100, key_value_tuples))
+    )
+    if is_empty:
+        logger.debug("Performed 0 gets")
+        # it's pretty wasteful to spin up a threadpool and start sending messages to it
+        # if we have nothing to process.
+        return ()
     if not dynamodb_resource and not thread_pool:
         # you didn't indicate you didn't want threads, so... here goes :)
         thread_pool = __DEFAULT_THREADPOOL()

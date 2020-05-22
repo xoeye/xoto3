@@ -33,7 +33,7 @@ def dynamodb_prewrite_set_transform(Set: set) -> ty.Optional[set]:
     return Set
 
 
-def dynamodb_prewrite_str_in_dict_transform(d: dict) -> dict:
+def dynamodb_prewrite_empty_str_in_dict_to_null_transform(d: dict) -> dict:
     """DynamoDB will break if you try to provide an empty string as a
     String value of a key that is used as an index. It requires you to
     provide these attributes as None rather than the empty string.

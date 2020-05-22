@@ -23,3 +23,16 @@ def grouper_it(n: int, iterable: ty.Iterable) -> ty.Iterable[ty.Iterable]:
 def strip_nones(d: dict) -> dict:
     """Removes keys where the values are None"""
     return {key: val for key, val in d.items() if val is not None}
+
+
+T = ty.TypeVar("T")
+
+
+def peek(iterable: ty.Iterable[T]) -> ty.Tuple[bool, ty.Optional[T], ty.Iterable[T]]:
+    """Gives you back the first element and an "equivalent" iterator."""
+    iterator = iter(iterable)
+    try:
+        first = next(iterator)
+        return False, first, itertools.chain([first], iterator)
+    except StopIteration:
+        return True, None, iter(())

@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from xoto3.dynamodb.conditions import item_exists, and_condition
 from xoto3.dynamodb.exceptions import DynamoDbException
-from xoto3.dynamodb.prewrite import dynamodb_prewrite
+from xoto3.dynamodb.prewrite import dynamodb_prewrite, _ACTIVE_UPDATE_TRANSFORM
 from xoto3.dynamodb.types import ItemKey, AttrDict
 
 
@@ -54,7 +54,9 @@ def build_update(
         update_args["ExpressionAttributeNames"] = expr_attr_names
     if expr_attr_values:
         # if you provide empty set_attrs there will be nothing here!
-        update_args["ExpressionAttributeValues"] = dynamodb_prewrite(expr_attr_values)
+        update_args["ExpressionAttributeValues"] = dynamodb_prewrite(
+            expr_attr_values, _ACTIVE_UPDATE_TRANSFORM
+        )
     update_args["Key"] = Key
 
     if "ReturnValues" not in update_args:
