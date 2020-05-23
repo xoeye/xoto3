@@ -4,6 +4,7 @@ All of these functional query builders assume that you will start with single_pa
 """
 from typing import Dict, Any, Optional
 from copy import deepcopy
+from functools import partial
 
 from .types import Index, KeyAttributeType, TableQuery
 from .utils.index import hash_key_name, range_key_name
@@ -96,3 +97,20 @@ def within_range(
         return query
 
     return tx_query
+
+
+def pipe(*funcs):
+    """Left to right function composition"""
+
+    def piped(arg):
+        r = arg
+        for f in funcs:
+            r = f(r)
+        return r
+
+    return piped
+
+
+def in_index(index: Index):
+    """Shorthand for calling single_partition and within_range separately"""
+    return partial(single_partition, index), partial(within_range, index)
