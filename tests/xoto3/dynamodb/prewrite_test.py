@@ -60,7 +60,7 @@ def test_dynamodb_prewrite():
         assert f"key{i}" not in stripped
 
 
-def test_other():
+def test_more_prewrite():
     test_dict = dict(
         k0={},
         k1={"nonempty string"},

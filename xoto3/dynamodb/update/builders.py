@@ -14,7 +14,7 @@ def build_update(
     remove_attrs: ty.Collection[str] = (),
     add_attrs: ty.Optional[AttrDict] = None,
     delete_attrs: ty.Optional[AttrDict] = None,
-    condition_exists: bool = False,
+    condition_exists: bool = True,
     **update_args,
 ) -> ty.Dict[str, ty.Any]:
     """Generates update_item argument dicts of medium complexity"""
