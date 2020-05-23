@@ -7,7 +7,7 @@ serverless development.
 These come from years of experience developing a serverless platform
 at XOi Technologies, and represent real production code.
 
-### Features
+## Features
 
 Some of the features included:
 
@@ -38,7 +38,7 @@ power is left in your hands. This is not a framework; just a set of
 mostly pure-functional utilities, with a couple of handy wrappers for
 `boto3` functions that perform IO.
 
-### Other Utilities
+## Other Utilities
 
 Some fairly general-purpose utilities are also included. See [the readme](xoto3/utils/README.md) for more details.
 
