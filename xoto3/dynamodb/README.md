@@ -29,3 +29,22 @@ for item in dp.yield_dynamo_items(content_table.query, last_500_pngs):
 ```
 
 `yield_dynamo_items` will automatically paginate all items for you.
+
+## batch_get
+
+Auto-paginates a BatchGet.
+
+```
+import boto3
+import xoto3.dynamodb.batch_get as bg
+
+table = boto3.resource('dynamodb').Table('Content')
+
+very_long_iterable_of_content_ids = (.....)
+
+for key, item in bg.BatchGetItem(table, very_long_iterable_of_content_ids):
+    if item:
+	    print(item)
+	else:
+	    print('Item {key} not present')
+```

@@ -22,6 +22,8 @@ Some of the features included:
     many annoyances of `boto3` and DynamoDB itself.
   - composable query interfaces that make writing basic queries against DynamoDB fun.
 
+  [see readme for examples](xoto3/dynamodb/README.md)
+
 - Cloudwatch Insights and Log Groups Query URL formatters.
 
 - General-purpose AWS Lambda finalization code, to make sure buffered
