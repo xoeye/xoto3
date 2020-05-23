@@ -44,7 +44,7 @@ very_long_iterable_of_content_ids = (.....)
 
 for key, item in bg.BatchGetItem(table, very_long_iterable_of_content_ids):
     if item:
-	    print(item)
-	else:
-	    print('Item {key} not present')
+        print(item)
+    else:
+        print('Item {key} not present')
 ```
