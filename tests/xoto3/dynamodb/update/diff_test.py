@@ -114,3 +114,15 @@ def test_select_attributes():
 
     # note that in neither case was 'di-none-val' removed because
     # it appears in both objects and the key was not removed from either
+
+
+def test_full_diffed_update_remove_new_dangerous_empty_strings():
+    content = dict(id="1234", group="okaygroup", box=[1, 2, 3], empty_thing=list(), empty_string="")
+
+    uc = copy.deepcopy(content)
+    uc["group"] = ""
+    uc["newthing"] = 1
+
+    assert select_attributes_for_set_and_remove(build_update_diff(content, uc)) == dict(
+        set_attrs=dict(newthing=1), remove_attrs={"group"}
+    )
