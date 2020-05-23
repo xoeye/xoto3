@@ -38,10 +38,12 @@ def coerce_transform(transform: TreeTransform) -> PathTransform:
 def map_tree(transform: TreeTransform, obj: Any) -> Any:
     """Maps a tree made of Python general-purpose builtin containers.
 
-    The tree property of the object is important - technically you can
-    submit a DAG, but the children will get transformed twice. It is
-    critical, of course, that you not provide an object with a cycle
-    in its graph - this will cause infinite recursion!
+    The tree property of the object is important - technically you may
+    submit a DAG, but the children will get transformed P times where
+    P is the number of unique paths in the graph leading to them from
+    the root. It is critical, of course, that you not provide an
+    object with a cycle in its graph - this will cause an infinite
+    cycle.
 
     Does a depth-first walk of the object, calling the transform as a
     preorder operation before then recursing into mappings, lists,
@@ -78,9 +80,11 @@ def map_tree(transform: TreeTransform, obj: Any) -> Any:
     'index' information to the path. This is because there cannot be a
     meaningful 'index' operation on sets, and therefore a path would
     be 'broken' no matter what at the point in the graph where a set
-    was present. Rather than try to provide different behavior across
-    concepts that don't support the same behaviors, we're providing a
-    reduced but logic subset of behavior.
+    was present. Rather than try to provide different behavior for
+    data structures that don't support the concept of indexing, we're
+    providing a reduced but logical subset of behavior where 'named'
+    paths only are provided.
+
     """
     return _map_tree(coerce_transform(transform), obj)
 
@@ -135,7 +139,7 @@ def make_path_only_transform(target_path: KeyPath, transform: SimpleTransform) -
 
 def type_dispatched_transform(tx_map: Mapping[type, TreeTransform]) -> PathTransform:
     @singledispatch
-    def tx_type(obj: Any, path: KeyPath) -> PathTransformReturn:
+    def tx_type(obj: Any, _path: KeyPath) -> PathTransformReturn:
         # passthrough base case
         return obj, False
 
