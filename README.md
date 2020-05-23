@@ -47,5 +47,5 @@ Some highlights:
 - `tree_map` - recursively map through a tree of Python builtins
 - `lazy` - general purpose lazy-loading container
 - Various serialization utilities (datetimes, decimals, JSON helpers)
-- `pipe_multiprocessing` - a ProcessPool for places where Python's
-  shared-memory-dependency Pool does not work.
+- `pipe_multiprocessing` - a Process Pool for places like AWS Lambda
+  where Python's built-in shared memory-dependent Pool does not work.
