@@ -61,7 +61,7 @@ def From(last_evaluated_key: str):
 
 
 def within_range(
-    index: Index, gte: Optional[KeyAttributeType] = None, lte: Optional[KeyAttributeType] = None
+    index: Index, *, gte: Optional[KeyAttributeType] = None, lte: Optional[KeyAttributeType] = None
 ):
     by = range_key_name(index)
 
