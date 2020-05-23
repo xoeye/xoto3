@@ -2,11 +2,11 @@
 
 ### dec
 
-Convert `decimal.Decimal`s
+Convert `decimal.Decimal` to and from `int`/`float`
 
 ### dt
 
-More consistent ISO8601 string datetime format
+More consistent string ISO8601 datetime format
 
 ### lazy
 
