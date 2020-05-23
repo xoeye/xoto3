@@ -42,3 +42,15 @@ None of these features "rely" on any of the others, so all of the
 power is left in your hands. This is not a framework; just a set of
 mostly pure-functional utilities, with a couple of handy wrappers for
 `boto3` functions that perform IO.
+
+### Other Utilities
+
+Some fairly general-purpose utilities are also included. See [the readme](xoto3/utils/README.md) for more details.
+
+Some highlights:
+
+- `tree_map` - recursively map through a tree of Python builtins
+- `lazy` - general purpose lazy-loading container
+- Various serialization utilities (datetimes, decimals, JSON helpers)
+- `pipe_multiprocessing` - a ProcessPool for places where Python's
+  shared-memory-dependency Pool does not work.
