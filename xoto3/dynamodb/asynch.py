@@ -10,7 +10,7 @@ import logging
 import asyncio
 from asyncio import Queue, get_event_loop
 
-from xoto3.lazy import tlls
+from xoto3.lazy_session import tlls
 from .batch_get import BatchGetItemTupleKeys
 
 
@@ -96,9 +96,9 @@ async def queue_batching_fulfiller(
 
             logger.debug(f"Received {len(request_futures)} requests before closing the batch.")
 
-            logger.debug(f"Starting batch processor!")
+            logger.debug("Starting batch processor!")
             results = batch_processor([future_to_request_map.pop(fut) for fut in request_futures])
-            logger.debug(f"Finished batch processor!")
+            logger.debug("Finished batch processor!")
             # we should always have received a result for every request we made...
             assert len(results) == len(request_futures)
 
@@ -115,7 +115,6 @@ async def queue_batching_fulfiller(
         raise e  # this is for easier debugging inside async tasks
     finally:
         logger.info(f"Exiting the Dynamo BatchGet task for {logging_name}")
-        return  # we're done
 
 
 def spawn_dynamo_fulfiller(

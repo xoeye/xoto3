@@ -9,7 +9,7 @@ from threading import Thread
 from uuid import uuid4
 from logging import getLogger
 
-from xoto3.utils.iter import grouper_it
+from .iter import grouper_it
 
 
 logger = getLogger(__name__)

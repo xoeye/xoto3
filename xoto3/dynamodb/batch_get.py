@@ -6,9 +6,10 @@ from multiprocessing.dummy import Pool as ThreadPool
 import os
 from logging import getLogger
 
-from xoto3.lazy import Lazy, tlls
-from xoto3.utils.backoff import backoff
+from xoto3.backoff import backoff
+from xoto3.lazy_session import tlls
 from xoto3.utils.iter import grouper_it, peek
+from xoto3.utils.lazy import Lazy
 from xoto3.dynamodb.types import TableResource
 
 from .types import Item, KeyTuple, ItemKey, KeyAttributeType
@@ -25,21 +26,13 @@ __DEFAULT_THREADPOOL: Lazy[ty.Any] = Lazy(
 _DYNAMODB_RESOURCE = tlls("resource", "dynamodb")
 
 
-KeyTupleItemPair = Tuple[KeyTuple, Item]
-
-
 class KeyItemPair(ty.NamedTuple):
     key: ItemKey
     item: Item  # if empty, the key was not found
 
 
 def BatchGetItem(
-    table: TableResource,
-    keys: ty.Iterable[ItemKey],
-    *,
-    dynamodb_resource=None,
-    thread_pool=None,
-    **kwargs,
+    table: TableResource, keys: ty.Iterable[ItemKey], **kwargs
 ) -> Iterable[KeyItemPair]:
     """Abstracts threading, pagination, and limited deduplication for BatchGetItem.
 
@@ -74,6 +67,9 @@ def BatchGetItem(
             table.name, (key_translator(key) for key in keys), canonical_key_attrs_order, **kwargs
         )
     )
+
+
+KeyTupleItemPair = Tuple[KeyTuple, Item]
 
 
 def BatchGetItemTupleKeys(

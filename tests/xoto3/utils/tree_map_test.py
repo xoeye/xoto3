@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from xoto3.tree_map import (
+from xoto3.utils.tree_map import (
     map_tree,
     type_dispatched_transform,
     make_path_stop_transform,

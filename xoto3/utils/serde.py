@@ -4,7 +4,7 @@ import base64
 from decimal import Decimal
 from datetime import datetime
 
-from xoto3.tree_map import map_tree, type_dispatched_transform
+from .tree_map import map_tree, type_dispatched_transform
 from .dec import decimal_to_number
 from .dt import iso8601strict
 

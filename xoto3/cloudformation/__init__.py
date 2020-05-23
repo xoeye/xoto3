@@ -1,7 +1,7 @@
 """Gets and caches things from Cloudformation"""
 import typing as ty
 
-from xoto3.lazy import tlls
+from xoto3.lazy_session import tlls
 
 
 _CF_RESOURCE = tlls("resource", "cloudformation")

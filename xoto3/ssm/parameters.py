@@ -16,7 +16,7 @@ from typing_extensions import Literal
 
 from botocore.exceptions import ClientError
 
-from xoto3.lazy import tlls
+from xoto3.lazy_session import tlls
 
 ParameterType = Union[Literal["String"], Literal["SecureString"], Literal["StringList"]]
 
@@ -29,6 +29,7 @@ _MAX_PARAM_SIZE = 4096
 
 try:
     import __main__ as main_func
+
     SCRIPT_NAME = os.path.basename(main_func.__file__)
 except Exception:  # pylint: disable=broad-except  # this is okay because getting the name is best-effort
     SCRIPT_NAME = "SSM Params"

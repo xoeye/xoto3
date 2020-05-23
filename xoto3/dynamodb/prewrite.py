@@ -3,7 +3,10 @@ from datetime import datetime
 from functools import partial
 from logging import getLogger
 
-from xoto3.tree_map import (
+
+from xoto3.utils.dt import iso8601strict
+from xoto3.utils.dec import float_to_decimal
+from xoto3.utils.tree_map import (
     map_tree,
     SimpleTransform,
     TreeTransform,
@@ -11,9 +14,6 @@ from xoto3.tree_map import (
     make_path_only_transform,
     compose,
 )
-
-from xoto3.utils.dt import iso8601strict
-from xoto3.utils.dec import float_to_decimal
 
 from .types import InputItem, Item
 from .utils.truth import strip_falsy

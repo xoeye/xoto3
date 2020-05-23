@@ -13,7 +13,7 @@ from logging import getLogger
 import botocore
 
 
-from xoto3.lazy import tlls
+from xoto3.lazy_session import tlls
 
 logger = getLogger(__name__)
 
