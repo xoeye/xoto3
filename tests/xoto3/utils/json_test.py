@@ -3,13 +3,7 @@ import json
 
 import pytest
 
-from xoto3.utils.serde import obj_to_base64, base64_to_obj, pre_json_dump
-
-
-def test_decoding():
-    obj = dict(birthday=[2014, 12, 22, 6, 42, 11], age="Steve")
-    assert base64_to_obj(obj_to_base64(obj)) == obj
-    assert base64_to_obj(obj_to_base64(dict())) == dict()
+from xoto3.utils.jsn import pre_json_dump
 
 
 def test_pre_json_dump():
