@@ -31,11 +31,6 @@ Some of the features included:
   for parameter values larger than what SSM will accept by
   automatically splitting your values and reconstructing them on gets.
 
-- A piped multiprocessing pool that actually works on AWS Lambda,
-  without shared memory. Sure, you can only get ~2 VCPUs with max RAM,
-  but 2 is better than 1 if you need to crunch some numbers (or
-  generate lots of presigned URLs).
-
 Various other utilities are included as well - feel free to poke through the source code.
 
 None of these features "rely" on any of the others, so all of the

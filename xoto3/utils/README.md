@@ -15,7 +15,9 @@ General purpose Lazy-loading wrapper with static type checking.
 ### pipe_multiprocessing
 
 A Process Pool for places where Python's shared-memory-dependency Pool
-does not work.
+does not work, such as AWS Lambdas. Sure, you can only get ~2 VCPUs
+with max RAM, but 2 is better than 1 if you need to crunch some
+numbers (or generate lots of presigned URLs)!
 
 ### tree_map
 
