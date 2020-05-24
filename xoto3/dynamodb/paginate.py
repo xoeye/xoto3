@@ -10,10 +10,10 @@ from .types import Item
 logger = getLogger(__name__)
 
 
-dynamo_table_yielder = partial(yield_pages_from_operation, *DYNAMODB_SCAN)
+dynamodb_table_yielder = partial(yield_pages_from_operation, *DYNAMODB_SCAN)
 
 
-def yield_dynamo_items(
+def yield_items(
     table_func, request: dict, last_evaluated_callback: LastEvaluatedCallback = None
 ) -> ty.Iterable[Item]:
     """Continues to iterate across table and yields all items even through pages.
@@ -23,6 +23,6 @@ def yield_dynamo_items(
 
     Works for `scan` and `query`.
     """
-    for page in dynamo_table_yielder(table_func, request, last_evaluated_callback):
+    for page in dynamodb_table_yielder(table_func, request, last_evaluated_callback):
         logger.debug("Retrieved a page of results from DynamoDB")
         yield from page.get("Items", [])
