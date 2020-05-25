@@ -54,7 +54,7 @@ def limit(limit: int):
     return tx_query
 
 
-def From(last_evaluated_key: str):
+def From(last_evaluated_key: dict):
     def tx_query(query: TableQuery) -> TableQuery:
         return dict(query, ExclusiveStartKey=last_evaluated_key) if last_evaluated_key else query
 

@@ -45,6 +45,8 @@ def put_unless_exists(Table: TableResource, item: InputItem) -> Tuple[Optional[E
         ConditionExpression=item_not_exists(Table.key_schema),
         ReturnValues="ALL_OLD",
     )
+    if not already_exists_cerror:
+        return None, dict(item)
     return already_exists_cerror, response["Item"]
 
 
