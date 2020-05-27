@@ -7,6 +7,7 @@ exec(open(f"{PKG_NAME}/__about__.py").read(), about)
 with open("README.md") as fh:
     long_description = fh.read()
 
+
 setup(
     name=PKG_NAME,
     version=about["__version__"],
@@ -19,6 +20,10 @@ setup(
     packages=find_packages(),
     package_data={"": ["py.typed"]},
     python_requires=">=3.6",
-    install_requires=["boto3 >= 1.9", "typing-extensions >= 3.7", "dataclasses"],
+    install_requires=[
+        "boto3 >= 1.9",
+        "typing-extensions >= 3.7",
+        "dataclasses;python_version<'3.7'",
+    ],
     # it is important to keep these install_requires basically in sync with the Pipfile as well.
 )
