@@ -40,3 +40,10 @@ def find_index(table: TableResource, hash_key: str, range_key: str) -> Optional[
                 if hash_key_name(index) == hash_key and range_key_name(index) == range_key:
                     return index
     return None
+
+
+def require_index(table: TableResource, hash_key: str, range_key: str) -> Index:
+    """Raises if the index is not found. A common pattern."""
+    index = find_index(table, hash_key, range_key)
+    assert index, f"Index ({hash_key}, {range_key}) was not found in table {table.name}"
+    return index

@@ -8,6 +8,7 @@ from functools import partial
 
 from .types import Index, KeyAttributeType, TableQuery
 from .utils.index import hash_key_name, range_key_name
+from .utils.index import find_index, require_index  # noqa # included only for cleaner imports
 
 
 def single_partition(index: Index, partition_value: KeyAttributeType) -> TableQuery:
@@ -54,11 +55,33 @@ def limit(limit: int):
     return tx_query
 
 
-def From(last_evaluated_key: dict):
+def page(last_evaluated_key: dict):
+    """Resume a query on the page represented by the LastEvaluatedKey you
+    previously received.
+
+    Note that there are pagination utilities in `paginate` if you don't
+    actually need to maintain this state (e.g., across client calls in a
+    RESTful service) and simply want to iterate through all the results.
+    """
+
     def tx_query(query: TableQuery) -> TableQuery:
         return dict(query, ExclusiveStartKey=last_evaluated_key) if last_evaluated_key else query
 
     return tx_query
+
+
+From = page
+"""Deprecated name - prefer 'page'
+
+The name From overlaps with SQL parlance about selecting a table,
+which is absolutely not what we're doing here. This was intended
+as shorthand for 'starting from', but even that overlaps with the
+concepts of 'greater than or equal' or 'less than or equal' for a
+range query.
+
+'page' makes it clearer, hopefully, that what is in view is
+specifically a pagination of a previous query.
+"""
 
 
 def within_range(

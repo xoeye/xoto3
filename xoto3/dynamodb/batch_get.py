@@ -43,7 +43,7 @@ def BatchGetItem(
     KeyItemPairs, e.g.  `KeyItemPair(key={'id': 'petros'}, val={'id':
     'petros', 'age': 88})`.
 
-    If all you want is the non-empty items, wrap this call in the
+    If all you want is the non-empty (existing) items, wrap this call in the
     provided `items_only` utility.
 
     """
@@ -243,13 +243,15 @@ def _kv_tuple_to_key(kv_tuple, key_names):
     return {key_names[i]: kv_tuple[i] for i in range(len(key_names))}
 
 
-def items_only(key_item_pairs: ty.Iterable[KeyItemPair]) -> ty.Iterable[Item]:
-    """Use with BatchGetItemsByKeys if you just want the items that were
+def items_only(
+    key_item_pairs: ty.Iterable[ty.Union[KeyItemPair, KeyTupleItemPair]]
+) -> ty.Iterable[Item]:
+    """Use with BatchGetItem if you just want the items that were
     found instead of the full iterable of all the keys you requested
     alongside their respective item or empty dict if the item wasn't
     found.
 
     """
-    for kip in key_item_pairs:
-        if kip.item:
-            yield kip.item
+    for key, item in key_item_pairs:
+        if item:
+            yield item
