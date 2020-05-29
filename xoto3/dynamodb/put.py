@@ -13,7 +13,7 @@ from xoto3.errors import catch_named_clienterrors
 
 from .conditions import item_not_exists
 from .exceptions import AlreadyExistsException
-from .types import InputItem, Item, TableResource
+from .types import InputItem, TableResource
 from .prewrite import dynamodb_prewrite
 
 
@@ -35,27 +35,26 @@ def make_put_item(nicename: str, Table: TableResource):
     return put_item_to_table
 
 
-def put_unless_exists(Table: TableResource, item: InputItem) -> Tuple[Optional[Exception], Item]:
+def put_unless_exists(Table: TableResource, item: InputItem) -> Tuple[Optional[Exception], dict]:
     """Put item unless it already exists, catching the already exists error and returning it"""
     _put_catch_already_exists = catch_named_clienterrors(
         func=Table.put_item, names=["ConditionalCheckFailedException"]
     )
-    already_exists_cerror, response = _put_catch_already_exists(
-        Item=dynamodb_prewrite(item),
-        ConditionExpression=item_not_exists(Table.key_schema),
-        ReturnValues="ALL_OLD",
-    )
+    args = dict(Item=dynamodb_prewrite(item), ReturnValues="ALL_OLD")
+    key_attr_not_exists = item_not_exists(Table.key_schema)
+    already_exists_cerror, response = _put_catch_already_exists(key_attr_not_exists(args))
     if not already_exists_cerror:
-        return None, dict(item)
-    return already_exists_cerror, response["Item"]
+        return None, response
+    return already_exists_cerror, response
 
 
 def put_but_raise_if_exists(
-    Table: TableResource, item: InputItem, *, nicename: str = "item"
+    Table: TableResource, item: InputItem, *, nicename: str = "Item"
 ) -> InputItem:
-    """Wrapper for put_item that raises a standard exception if the item exists.
+    """Wrapper for put_item that raises AlreadyExistsException if the item exists.
 
-    Just returns the passed item."""
+    If successful, just returns the passed item.
+    """
     already_exists_cerror, _response = put_unless_exists(Table, item)
     if already_exists_cerror:
         raise AlreadyExistsException(f"{nicename} already exists and was not overwritten!")

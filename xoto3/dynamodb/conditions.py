@@ -1,34 +1,65 @@
-from typing import Union
+from typing import Union, Iterable
 from copy import deepcopy
+from random import choice
+import string
 
 from .types import PrimaryIndex, ItemKey
 from .utils.index import hash_key_name
 
 
 def condition_attribute_exists(attribute_name: str) -> dict:
+    """You're probably better off with the more composable add_condition_attribute_exists"""
     return dict(ConditionExpression=f"attribute_exists({attribute_name})")
+
+
+def add_condition_attribute_exists(attribute_name: str):
+    return and_named_condition("attribute_exists({name})", attribute_name)
 
 
 def any_key_name(key: ItemKey) -> str:
     return list(key.keys())[0]
 
 
-def item_exists(key_or_schema: Union[ItemKey, PrimaryIndex]) -> str:
-    key_name = (
+def get_key_name(key_or_schema: Union[ItemKey, PrimaryIndex]):
+    return (
         any_key_name(key_or_schema)
         if isinstance(key_or_schema, dict)
         else hash_key_name(key_or_schema)
     )
-    return f"attribute_exists({key_name})"
 
 
-def item_not_exists(key_or_schema: Union[ItemKey, PrimaryIndex]) -> str:
-    key_name = (
-        any_key_name(key_or_schema)
-        if isinstance(key_or_schema, dict)
-        else hash_key_name(key_or_schema)
-    )
-    return f"attribute_not_exists({key_name})"
+def range_str(start: str) -> Iterable[str]:
+    suffix = ""
+    while True:
+        yield start + suffix
+        suffix += choice(string.ascii_lowercase)
+
+
+def and_named_condition(condition_fmt: str, name: str, *, ex_attr_name: str = ":_anc_name"):
+    assert "name" in condition_fmt, "Format string must contain 'name'"
+
+    def tx_args(args: dict) -> dict:
+        args = deepcopy(args)
+        existing_names = args.get("ExpressionAttributeNames", dict())
+        for ex_n in range_str(ex_attr_name):
+            # find an unused expression attribute name
+            if ex_n not in existing_names:
+                break
+
+        names = {ex_n: name}
+        cond_expr = condition_fmt.format(name=ex_n)
+        args["ExpressionAttributeNames"] = {**existing_names, **names}
+        return and_condition(args, cond_expr)
+
+    return tx_args
+
+
+def item_exists(key_or_schema: Union[ItemKey, PrimaryIndex]):
+    return and_named_condition("attribute_exists({name})", get_key_name(key_or_schema))
+
+
+def item_not_exists(key_or_schema: Union[ItemKey, PrimaryIndex]):
+    return and_named_condition("attribute_not_exists({name})", get_key_name(key_or_schema))
 
 
 def and_condition(args_dict: dict, condition: str) -> dict:

@@ -1,4 +1,17 @@
-### 1.1.0
+### 1.1.1
+
+Within `xoto3.dynamodb`:
+
+- Fixed `batch_write` imports.
+- `versioned_diffed_update_item` now performs standard
+  `boto3`-required data fixups on transformed items by default, but
+  this behavior can be customized.
+- Fixed return type of `put_unless_exists`
+- Fixed cases where reserved words used as table primary key attribute
+  names could cause `put_unless_exists` to fail with a
+  ValidationException.
+
+## 1.1.0
 
 - Added `require_index` utility to `dynamodb.query`
 - New, clearer name `page` to replace `From` in `dynamodb.query`. The
@@ -11,8 +24,10 @@ Fixed install_requires for Python > 3.6
 
 ### 1.0.2
 
+Within `xoto3.dynamodb`:
+
 - Fixed return value for `put_unless_exists`.
-- Fixed type for `xoto3.dynamodb.query.From`
+- Fixed type for `query.From`
 
 ### 1.0.1
 

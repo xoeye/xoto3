@@ -1,7 +1,7 @@
 import typing as ty
 from copy import deepcopy
 
-from xoto3.dynamodb.conditions import item_exists, and_condition
+from xoto3.dynamodb.conditions import item_exists
 from xoto3.dynamodb.exceptions import DynamoDbException
 from xoto3.dynamodb.prewrite import dynamodb_prewrite, _ACTIVE_UPDATE_TRANSFORM
 from xoto3.dynamodb.types import ItemKey, AttrDict
@@ -63,7 +63,7 @@ def build_update(
         update_args["ReturnValues"] = "ALL_NEW"
 
     if condition_exists:
-        update_args = and_condition(update_args, item_exists(Key))
+        update_args = item_exists(Key)(update_args)
 
     return update_args
 

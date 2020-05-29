@@ -9,6 +9,7 @@ import time
 import random
 import os
 from logging import getLogger
+from functools import partial
 
 from typing_extensions import Protocol
 
@@ -19,6 +20,13 @@ from xoto3.utils.dt import iso8601strict
 from xoto3.dynamodb.types import TableResource
 from xoto3.dynamodb.get import strongly_consistent_get_item
 from xoto3.dynamodb.types import ItemKey, Item, AttrDict
+from xoto3.dynamodb.prewrite import (
+    map_tree,
+    type_dispatched_transform,
+    REQUIRED_TRANSFORMS,
+    RECOMMENDED_TRANSFORMS,
+    SimpleTransform,
+)
 from .core import UpdateItem
 from .diff import build_update_diff, select_attributes_for_set_and_remove
 
@@ -30,6 +38,11 @@ MAX_TRANSACTION_SLEEP = float(os.environ.get("DYNAMO_VERSIONING_RANDOM_SLEEP_SEC
 
 
 logger = getLogger(__name__)
+
+
+_DEFAULT_TRANSFORM = partial(
+    map_tree, type_dispatched_transform({**REQUIRED_TRANSFORMS, **RECOMMENDED_TRANSFORMS})
+)
 
 
 class VersionedUpdateFailure(Exception):
@@ -71,6 +84,7 @@ def versioned_diffed_update_item(
     item_version_key: str = "item_version",
     last_written_key: str = "last_written_at",
     random_sleep_on_lost_race: bool = True,
+    prewrite_transform: ty.Optional[SimpleTransform] = _DEFAULT_TRANSFORM,
 ) -> Item:
     """Performs an item read-transform-write loop until there are no intervening writes.
 
@@ -104,6 +118,9 @@ def versioned_diffed_update_item(
         if not updated_item:
             logger.debug("No transformed item was returned; returning original item")
             return item
+        if prewrite_transform:
+            updated_item = prewrite_transform(updated_item)
+        assert updated_item is not None
         item_diff = build_update_diff(item, updated_item)
         if not item_diff:
             logger.info(

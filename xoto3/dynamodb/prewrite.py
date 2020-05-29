@@ -3,7 +3,6 @@ from datetime import datetime
 from functools import partial
 from logging import getLogger
 
-
 from xoto3.utils.dt import iso8601strict
 from xoto3.utils.dec import float_to_decimal
 from xoto3.utils.tree_map import (
@@ -29,9 +28,6 @@ logger = getLogger(__name__)
 REQUIRED_TRANSFORMS: ty.Mapping[type, ty.Callable] = {
     float: float_to_decimal,
     # boto3 will yell if you provide floats instead of Decimals
-    dict: make_path_only_transform((), dynamodb_prewrite_empty_str_in_dict_to_null_transform),
-    # technically only attributes used in indexes must have empty strings replaced with null,
-    # but without inspecting the table it's impossible to know which those are.
     tuple: list,
     # boto3 expects lists rather than tuples
     set: dynamodb_prewrite_set_transform,

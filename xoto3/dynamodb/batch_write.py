@@ -3,7 +3,7 @@ import timeit
 from logging import getLogger
 from typing_extensions import TypedDict
 
-from xoto3.utils.backoff import backoff
+from xoto3.backoff import backoff
 from xoto3.utils.iter import grouper_it
 
 from .types import InputItem, Item, ItemKey, TableResource
