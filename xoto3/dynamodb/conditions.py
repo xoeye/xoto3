@@ -16,6 +16,10 @@ def add_condition_attribute_exists(attribute_name: str):
     return and_named_condition("attribute_exists({name})", attribute_name)
 
 
+def add_condition_attribute_not_exists(attribute_name: str):
+    return and_named_condition("attribute_not_exists({name})", attribute_name)
+
+
 def any_key_name(key: ItemKey) -> str:
     return list(key.keys())[0]
 
@@ -35,8 +39,9 @@ def range_str(start: str) -> Iterable[str]:
         suffix += choice(string.ascii_lowercase)
 
 
-def and_named_condition(condition_fmt: str, name: str, *, ex_attr_name: str = ":_anc_name"):
+def and_named_condition(condition_fmt: str, name: str, *, ex_attr_name: str = "#_anc_name"):
     assert "name" in condition_fmt, "Format string must contain 'name'"
+    assert ex_attr_name.startswith("#"), "Expression attribute names must start with #"
 
     def tx_args(args: dict) -> dict:
         args = deepcopy(args)
@@ -55,11 +60,11 @@ def and_named_condition(condition_fmt: str, name: str, *, ex_attr_name: str = ":
 
 
 def item_exists(key_or_schema: Union[ItemKey, PrimaryIndex]):
-    return and_named_condition("attribute_exists({name})", get_key_name(key_or_schema))
+    return add_condition_attribute_exists(get_key_name(key_or_schema))
 
 
 def item_not_exists(key_or_schema: Union[ItemKey, PrimaryIndex]):
-    return and_named_condition("attribute_not_exists({name})", get_key_name(key_or_schema))
+    return add_condition_attribute_not_exists(get_key_name(key_or_schema))
 
 
 def and_condition(args_dict: dict, condition: str) -> dict:

@@ -37,12 +37,13 @@ def make_put_item(nicename: str, Table: TableResource):
 
 def put_unless_exists(Table: TableResource, item: InputItem) -> Tuple[Optional[Exception], dict]:
     """Put item unless it already exists, catching the already exists error and returning it"""
+    key_attr_not_exists = item_not_exists(Table.key_schema)
     _put_catch_already_exists = catch_named_clienterrors(
         func=Table.put_item, names=["ConditionalCheckFailedException"]
     )
-    args = dict(Item=dynamodb_prewrite(item), ReturnValues="ALL_OLD")
-    key_attr_not_exists = item_not_exists(Table.key_schema)
-    already_exists_cerror, response = _put_catch_already_exists(key_attr_not_exists(args))
+    already_exists_cerror, response = _put_catch_already_exists(
+        **key_attr_not_exists(dict(Item=dynamodb_prewrite(item), ReturnValues="ALL_OLD"))
+    )
     if not already_exists_cerror:
         return None, response
     return already_exists_cerror, response
