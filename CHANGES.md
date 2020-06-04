@@ -1,3 +1,9 @@
+### 1.1.2
+
+- Fixed bug in `versioned_diffed_update_item` preventing it from being
+  used to create items that did not previously exist.
+- Improved docstrings and documentation.
+
 ### 1.1.1
 
 Within `xoto3.dynamodb`:

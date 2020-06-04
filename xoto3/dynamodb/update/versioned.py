@@ -73,13 +73,16 @@ class ItemUpdater(Protocol):
         ...
 
 
+UpdateOrCreateItem = partial(UpdateItem, condition_exists=False)
+
+
 def versioned_diffed_update_item(
     table: TableResource,
     item_transformer: ItemTransformer,
     item_id: ItemKey,
     *,
     get_item: ItemGetter = strongly_consistent_get_item,
-    update_item: ItemUpdater = UpdateItem,
+    update_item: ItemUpdater = UpdateOrCreateItem,
     max_attempts_before_failure: int = DEFAULT_MAX_ATTEMPTS_BEFORE_FAILURE,
     item_version_key: str = "item_version",
     last_written_key: str = "last_written_at",
@@ -139,16 +142,13 @@ def versioned_diffed_update_item(
 
         try:
             # write if no intervening updates
-            update_item(
-                table,
-                item_id,
-                **select_attributes_for_set_and_remove(item_diff),
-                **versioned_item_expression(
-                    cur_item_version,
-                    item_version_key,
-                    id_that_exists=next(iter(item_id.keys())) if item else "",
-                ),
+            expr = versioned_item_expression(
+                cur_item_version,
+                item_version_key,
+                id_that_exists=next(iter(item_id.keys())) if item else "",
             )
+            logger.debug(expr)
+            update_item(table, item_id, **select_attributes_for_set_and_remove(item_diff), **expr)
             return updated_item
         except ClientError as ce:
             if client_error_name(ce) == "ConditionalCheckFailedException":

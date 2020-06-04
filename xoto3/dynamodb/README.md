@@ -15,7 +15,7 @@ import xoto3.dynamodb.paginate as dp
 content_table = boto3.resource('dynamodb').Table('Content')
 
 partition, in_range = dq.in_index(
-    di.find_index(content_table, 'mediaType', 'datetime')
+    di.require_index(content_table, 'mediaType', 'datetime')
 )
 
 last_500_pngs = dq.pipe(
@@ -24,11 +24,30 @@ last_500_pngs = dq.pipe(
     in_range(gte='2020-03'),
 )(partition('image/png'))
 
-for item in dp.yield_dynamo_items(content_table.query, last_500_pngs):
+for item in dp.yield_items(content_table.query, last_500_pngs):
     print(item)
 ```
 
-`yield_dynamo_items` will automatically paginate all items for you.
+`yield_items` will automatically paginate all items for you.
+
+## conditions
+
+A few composable builders for common DynamoDB conditions are made available.
+
+- `add_condition_attribute_exists`
+
+```
+ddb_args = dict(
+    ConditionExpression="#item_version = :item_version",
+    ExpressionAttributeNames={"#item_version": "item_version"},
+    ExpressionAttributeValues={":item_version": 3},
+)
+add_condition_attribute_exists("id")(ddb_args) == {
+  'ConditionExpression': '#item_version = :item_version AND attribute_exists(#_anc_name)',
+  'ExpressionAttributeNames': {'#item_version': 'item_version', '#_anc_name': 'id'},
+  'ExpressionAttributeValues': {':item_version': 3}
+}
+```
 
 ## batch_get
 

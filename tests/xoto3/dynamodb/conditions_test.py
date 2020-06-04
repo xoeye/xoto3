@@ -1,4 +1,4 @@
-from xoto3.dynamodb.conditions import item_exists, item_not_exists, range_str
+from xoto3.dynamodb.conditions import item_exists, item_not_exists, _range_str
 
 
 def test_item_exists():
@@ -36,8 +36,8 @@ def test_item_not_exists():
     )
 
 
-def test_range_str():
-    it = iter(range_str("hey"))
+def test__range_str():
+    it = iter(_range_str("hey"))
     for i in range(6):
         j = next(it)
         assert j.startswith("hey")
