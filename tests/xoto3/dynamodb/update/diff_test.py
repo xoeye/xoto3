@@ -1,4 +1,6 @@
 import copy
+from datetime import datetime
+from decimal import Decimal
 
 from xoto3.dynamodb.update.diff import (
     is_meaningful_value_update,
@@ -83,6 +85,20 @@ def test_build_update_diff():
     d6["empty_valkey"] = ""
     d1_d6 = build_update_diff(d6, d1)
     assert d1_d6["empty_valkey"] is None
+
+
+def test_diff_coerces_unacceptable_types_by_default():
+    """You would never expect the old item to be anything other than pure
+    DynamoDB data, but the new item might have had things added that
+    won't work in DynamoDB without transformation.
+    """
+    old = dict(topA=[1, 2, 3], topB=dict(M="2018-04-13T12:23:34.000122Z"))
+    new = dict(topA=(1, 2, 3), topB=dict(M=datetime(2018, 4, 13, 12, 23, 34, 122)), newC=1.0)
+
+    diff = build_update_diff(old, new)
+    assert set(diff.keys()) == {"newC"}
+    assert diff["newC"] == Decimal(1.0)
+    assert isinstance(diff["newC"], Decimal)
 
 
 def test_select_attributes():

@@ -1,15 +1,33 @@
-from typing import Dict, Any, Set
+from typing import Dict, Any, Set, Optional
+from functools import partial
 from logging import getLogger
 from typing_extensions import TypedDict
 
 from xoto3.dynamodb.types import InputItem, AttrDict, AttrInput
 from xoto3.dynamodb.utils.truth import dynamodb_truthy
+from xoto3.dynamodb.prewrite import (
+    map_tree,
+    type_dispatched_transform,
+    REQUIRED_TRANSFORMS,
+    RECOMMENDED_TRANSFORMS,
+    SimpleTransform,
+)
 
 
 logger = getLogger(__name__)
 
 
-def build_update_diff(old: InputItem, new: InputItem) -> AttrDict:
+_DEFAULT_PREDIFF_TRANSFORM = partial(
+    map_tree, type_dispatched_transform({**REQUIRED_TRANSFORMS, **RECOMMENDED_TRANSFORMS})
+)
+
+
+def build_update_diff(
+    old: InputItem,
+    new: InputItem,
+    *,
+    prediff_transform: Optional[SimpleTransform] = _DEFAULT_PREDIFF_TRANSFORM,
+) -> AttrDict:
     """Gets an update dict for Dynamo that is the meaningful top-level
     attribute Dynamo-specific difference between the two items,
     assuming your items support deep (recursive) equality checks.
@@ -24,6 +42,9 @@ def build_update_diff(old: InputItem, new: InputItem) -> AttrDict:
     of how Dynamo works.
 
     """
+    if prediff_transform:
+        new = prediff_transform(new)
+
     diff: Dict[str, Any] = dict()
     for key in new.keys():
         new_val = new[key]

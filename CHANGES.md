@@ -1,3 +1,9 @@
+### 1.2.0
+
+- `build_update_diff` now also performs automatic type coercion on the
+  'new' item in the case of datetimes, tuples, floats, and removing
+  empty sets.
+
 ### 1.1.2
 
 - Fixed bug in `versioned_diffed_update_item` preventing it from being
