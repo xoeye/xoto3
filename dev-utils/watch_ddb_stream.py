@@ -3,6 +3,7 @@
 
 By default only prints the primary key.
 """
+from typing import Callable
 import argparse
 import boto3
 
@@ -16,7 +17,20 @@ DDB_RES = boto3.resource("dynamodb")
 DDB_STREAMS_CLIENT = boto3.client("dynamodbstreams")
 
 
-def make_accept_stream_item_for_table(table):
+def make_accept_stream_item_for_table(item_slicer: Callable[[dict], str]):
+    def accept_stream_item(record: dict):
+        old, new = old_and_new_items_from_stream_event_record(record)
+        if not old:
+            print(f"New item: {item_slicer(new)}")
+        elif not new:
+            print(f"Deleted item {item_slicer(old)}")
+        else:
+            print(f"Updated item {item_slicer(new)}")
+
+    return accept_stream_item
+
+
+def make_key_slicer(table):
     hash_key = hash_key_name(table.key_schema)
     try:
         range_key = range_key_name(table.key_schema)
@@ -30,28 +44,36 @@ def make_accept_stream_item_for_table(table):
             key[range_key] = item[range_key]
         return key
 
-    def accept_stream_item(record: dict):
-        old, new = old_and_new_items_from_stream_event_record(record)
-        if not old:
-            print(f"New item {extract_primary_key(new)}")
-        elif not new:
-            print(f"Deleted item {extract_primary_key(old)}")
-        else:
-            print(f"Updated item {extract_primary_key(new)}")
-
-    return accept_stream_item
+    return extract_primary_key
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("table_name")
+    parser.add_argument(
+        "--attribute-names", help="Any attributes other than the key to print", nargs="*"
+    )
     args = parser.parse_args()
 
     table = DDB_RES.Table(args.table_name)
 
+    if args.attribute_names:
+        key_slicer = make_key_slicer(table)
+
+        def item_slicer(item: dict):
+            return {
+                **key_slicer(item),
+                **{attr_name: item.get(attr_name) for attr_name in args.attribute_names},
+            }
+
+    else:
+        item_slicer = make_key_slicer(table)
+
     try:
         t, _kill = process_latest_from_stream(
-            DDB_STREAMS_CLIENT, table.latest_stream_arn, make_accept_stream_item_for_table(table)
+            DDB_STREAMS_CLIENT,
+            table.latest_stream_arn,
+            make_accept_stream_item_for_table(item_slicer),
         )
         t.join()
     except KeyboardInterrupt:
