@@ -182,7 +182,7 @@ def test_string_item_version_coercion_to_int():
     ) -> Item:
         """"""
         called_times[0] += 1
-        assert update_args["ExpressionAttributeValues"][":cur_item_version"] == ITEM_VERSION_STR
+        assert update_args["ExpressionAttributeValues"][":curItemVersion"] == ITEM_VERSION_STR
         return dict()
 
     item_version_1 = versioned_diffed_update_item(
@@ -200,17 +200,17 @@ def test_string_item_version_coercion_to_int():
 
 def test_update_only_versioning_expression():
     assert xdv.versioned_item_expression(2, id_that_exists="id") == dict(
-        ExpressionAttributeNames={"#item_version": "item_version", "#id_that_exists": "id"},
-        ExpressionAttributeValues={":cur_item_version": 2},
-        ConditionExpression="#item_version = :cur_item_version OR ( attribute_not_exists(#item_version) AND attribute_exists(#id_that_exists) )",
+        ExpressionAttributeNames={"#itemVersion": "item_version", "#idThatExists": "id"},
+        ExpressionAttributeValues={":curItemVersion": 2},
+        ConditionExpression="#itemVersion = :curItemVersion OR ( attribute_not_exists(#itemVersion) AND attribute_exists(#idThatExists) )",
     )
 
 
 def test_allow_create_versioning_expression():
     assert xdv.versioned_item_expression(0) == dict(
-        ExpressionAttributeNames={"#item_version": "item_version"},
-        ExpressionAttributeValues={":cur_item_version": 0},
-        ConditionExpression="#item_version = :cur_item_version OR attribute_not_exists(#item_version)",
+        ExpressionAttributeNames={"#itemVersion": "item_version"},
+        ExpressionAttributeValues={":curItemVersion": 0},
+        ConditionExpression="#itemVersion = :curItemVersion OR attribute_not_exists(#itemVersion)",
     )
 
 

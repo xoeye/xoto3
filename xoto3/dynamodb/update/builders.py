@@ -5,6 +5,7 @@ from xoto3.dynamodb.conditions import item_exists
 from xoto3.dynamodb.exceptions import DynamoDbException
 from xoto3.dynamodb.prewrite import dynamodb_prewrite, _ACTIVE_UPDATE_TRANSFORM
 from xoto3.dynamodb.types import ItemKey, AttrDict
+from xoto3.dynamodb.utils.expressions import make_unique_expr_attr_key
 
 
 def build_update(
@@ -82,11 +83,12 @@ def build_setattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, dict
         raise DynamoDbException("Cannot perform an update with no attributes!")
 
     set_expr = "SET "
-    expr_attr_names = dict()
+    expr_attr_names: ty.Dict[str, str] = dict()
     expr_attr_values = dict()
-    for key, value in attrs_dict.items():
+    for attrname, value in attrs_dict.items():
+        key = make_unique_expr_attr_key(attrname, set(expr_attr_names))
         set_expr += f"#{key} = :{key}, "
-        expr_attr_names[f"#{key}"] = key
+        expr_attr_names[f"#{key}"] = attrname
         expr_attr_values[f":{key}"] = value
     set_expr = set_expr.rstrip(", ")
 
@@ -95,11 +97,12 @@ def build_setattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, dict
 
 def build_addattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, dict]:
     add_expr = "ADD "
-    ea_names = dict()
+    ea_names: ty.Dict[str, str] = dict()
     ea_values = dict()
-    for key, value in attrs_dict.items():
+    for attrname, value in attrs_dict.items():
+        key = make_unique_expr_attr_key(attrname, set(ea_names))
         add_expr += f"#{key} :add{key}, "
-        ea_names[f"#{key}"] = key
+        ea_names[f"#{key}"] = attrname
         ea_values[f":add{key}"] = value
     add_expr = add_expr.rstrip(", ")
     return add_expr, ea_names, ea_values
@@ -107,17 +110,20 @@ def build_addattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, dict
 
 def build_deleteattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, dict]:
     del_expr = "DELETE "
-    ea_names = dict()
+    ea_names: ty.Dict[str, str] = dict()
     ea_values = dict()
-    for key, value in attrs_dict.items():
+    for attrname, value in attrs_dict.items():
+        key = make_unique_expr_attr_key(attrname, set(ea_names))
         del_expr += f"#{key} :del{key}, "
-        ea_names[f"#{key}"] = key
+        ea_names[f"#{key}"] = attrname
         ea_values[f":del{key}"] = value
     del_expr = del_expr.rstrip(", ")
     return del_expr, ea_names, ea_values
 
 
-def build_removeattrs_for_update(attrs: ty.Collection) -> ty.Tuple[str, dict]:
-    expr_attr_names = {f"#{attr_name}": attr_name for attr_name in attrs}
-    remove_expr = "REMOVE " + ", ".join(f"#{attr_name}" for attr_name in set(attrs))
+def build_removeattrs_for_update(attr_names: ty.Collection) -> ty.Tuple[str, dict]:
+    expr_attr_names = {
+        f"#{make_unique_expr_attr_key(attrname)}": attrname for attrname in attr_names
+    }
+    remove_expr = "REMOVE " + ", ".join(key for key in set(expr_attr_names))
     return remove_expr, expr_attr_names

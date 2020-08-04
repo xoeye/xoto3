@@ -1,4 +1,12 @@
-### 1.2.0
+### 1.2.1
+
+- DynamoDB utilities now correctly use alphanumeric
+  ExpressionAttributeNames. It would appear that DynamoDB only
+  enforces this restriction selectively; we ran into it when trying to
+  REMOVE an attribute during an update; SET does not seem to
+  experience these issues.
+
+## 1.2.0
 
 - `build_update_diff` now also performs automatic type coercion on the
   'new' item in the case of datetimes, tuples, floats, and removing
