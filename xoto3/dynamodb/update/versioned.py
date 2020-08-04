@@ -182,14 +182,14 @@ def versioned_item_expression(
     versioned_item_diffed_update, there is no need to enforce this.
 
     """
-    expr_names = {"#item_version": item_version_key}
-    expr_vals = {":cur_item_version": item_version}
-    item_version_condition = "#item_version = :cur_item_version"
-    first_time_version_condition = "attribute_not_exists(#item_version)"
+    expr_names = {"#itemVersion": item_version_key}
+    expr_vals = {":curItemVersion": item_version}
+    item_version_condition = "#itemVersion = :curItemVersion"
+    first_time_version_condition = "attribute_not_exists(#itemVersion)"
     if id_that_exists:
-        expr_names["#id_that_exists"] = id_that_exists
+        expr_names["#idThatExists"] = id_that_exists
         first_time_version_condition = (
-            f"( {first_time_version_condition} AND attribute_exists(#id_that_exists) )"
+            f"( {first_time_version_condition} AND attribute_exists(#idThatExists) )"
         )
     return dict(
         ExpressionAttributeNames=expr_names,

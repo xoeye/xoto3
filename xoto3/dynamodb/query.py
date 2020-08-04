@@ -110,13 +110,15 @@ def within_range(
     def tx_query(query: TableQuery) -> TableQuery:
         query = deepcopy(query)
         query["ExpressionAttributeNames"] = dict(
-            query["ExpressionAttributeNames"], **expr_attr_names
+            query.get("ExpressionAttributeNames", dict()), **expr_attr_names
         )
         query["ExpressionAttributeValues"] = dict(
-            query["ExpressionAttributeValues"], **expr_attr_values
+            query.get("ExpressionAttributeValues", dict()), **expr_attr_values
         )
         if key_condition_expr:
-            query["KeyConditionExpression"] += key_condition_expr
+            query["KeyConditionExpression"] = (
+                query.get("KeyConditionExpression", "") + key_condition_expr
+            )
         return query
 
     return tx_query

@@ -3,11 +3,14 @@ from copy import deepcopy
 from logging import getLogger as get_logger
 
 from .types import TableQuery
+from .utils.expressions import make_unique_expr_attr_key
 
 logger = get_logger(__name__)
 
 
-def stringset_contains(set_attr_name: str, contains: Set[str], AND=True):
+def stringset_contains(
+    set_attr_name: str, contains: Set[str], AND: bool = True, suffix: str = "SSCONTAINS"
+):
     def tx_query(query: TableQuery) -> TableQuery:
         """Adds a set of StringSet 'contains' conditions to a DynamoDB FilterExpression.
 
@@ -20,15 +23,20 @@ def stringset_contains(set_attr_name: str, contains: Set[str], AND=True):
 
         operator = "AND" if AND else "OR"
 
+        key = make_unique_expr_attr_key(set_attr_name + suffix)
+        name = "#" + key
+        value_base = ":" + key
+
         query["ExpressionAttributeNames"] = {
-            **query["ExpressionAttributeNames"],
-            **{f"#{set_attr_name}": set_attr_name},
+            **query.get("ExpressionAttributeNames", dict()),
+            **{name: set_attr_name},
         }
         for i, string in enumerate(contains):
-            fex += f" contains(#{set_attr_name}, :{set_attr_name}{i}) {operator} "
+            value = value_base + str(i)
+            fex += f"contains({name}, {value}) {operator} "
             query["ExpressionAttributeValues"] = {
-                **query["ExpressionAttributeValues"],
-                **{f":{set_attr_name}{i}": string},
+                **query.get("ExpressionAttributeValues", dict()),
+                **{value: string},
             }
         fex = fex[: -(1 + len(operator))]  # strip final operator
 

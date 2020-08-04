@@ -38,14 +38,14 @@ A few composable builders for common DynamoDB conditions are made available.
 
 ```
 ddb_args = dict(
-    ConditionExpression="#item_version = :item_version",
-    ExpressionAttributeNames={"#item_version": "item_version"},
-    ExpressionAttributeValues={":item_version": 3},
+    ConditionExpression="#itemVersion = :itemVersion",
+    ExpressionAttributeNames={"#itemVersion": "item_version"},
+    ExpressionAttributeValues={":itemVersion": 3},
 )
 add_condition_attribute_exists("id")(ddb_args) == {
-  'ConditionExpression': '#item_version = :item_version AND attribute_exists(#_anc_name)',
-  'ExpressionAttributeNames': {'#item_version': 'item_version', '#_anc_name': 'id'},
-  'ExpressionAttributeValues': {':item_version': 3}
+  'ConditionExpression': '#itemVersion = :itemVersion AND attribute_exists(#_anc_name)',
+  'ExpressionAttributeNames': {'#itemVersion': 'item_version', '#_anc_name': 'id'},
+  'ExpressionAttributeValues': {':itemVersion': 3}
 }
 ```
 
