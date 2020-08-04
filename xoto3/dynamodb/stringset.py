@@ -24,16 +24,19 @@ def stringset_contains(
         operator = "AND" if AND else "OR"
 
         key = make_unique_expr_attr_key(set_attr_name + suffix)
+        name = "#" + key
+        value_base = ":" + key
 
         query["ExpressionAttributeNames"] = {
             **query.get("ExpressionAttributeNames", dict()),
-            **{f"#{key}": set_attr_name},
+            **{name: set_attr_name},
         }
         for i, string in enumerate(contains):
-            fex += f"contains(#{key}, :{key}{i}) {operator} "
+            value = value_base + str(i)
+            fex += f"contains({name}, {value}) {operator} "
             query["ExpressionAttributeValues"] = {
                 **query.get("ExpressionAttributeValues", dict()),
-                **{f":{key}{i}": string},
+                **{value: string},
             }
         fex = fex[: -(1 + len(operator))]  # strip final operator
 
