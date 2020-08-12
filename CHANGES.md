@@ -1,3 +1,7 @@
+### 1.3.0
+
+- added `put_or_return_existing` utility.
+
 ### 1.2.1
 
 - DynamoDB utilities now correctly use alphanumeric

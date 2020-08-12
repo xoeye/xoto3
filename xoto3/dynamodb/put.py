@@ -6,16 +6,17 @@ items to make them acceptable to boto3/DynamoDB.
 
 If you need/wish to customize this behavior, look at .prewrite.
 """
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 from logging import getLogger
 
 from xoto3.errors import catch_named_clienterrors
 
 from .conditions import item_not_exists
 from .exceptions import AlreadyExistsException
-from .types import InputItem, TableResource
+from .types import InputItem, TableResource, Item
 from .prewrite import dynamodb_prewrite
-
+from .utils.table import table_primary_keys
+from .get import strongly_consistent_get_item
 
 logger = getLogger(__name__)
 
@@ -60,3 +61,13 @@ def put_but_raise_if_exists(
     if already_exists_cerror:
         raise AlreadyExistsException(f"{nicename} already exists and was not overwritten!")
     return item
+
+
+def put_or_return_existing(table: TableResource, item: InputItem) -> Union[Item, InputItem]:
+    try:
+        put_but_raise_if_exists(table, item)
+        return item
+    except AlreadyExistsException:
+        return strongly_consistent_get_item(
+            table, {key: item[key] for key in table_primary_keys(table)}
+        )
