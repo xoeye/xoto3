@@ -27,20 +27,25 @@ def make_unique_expr_attr_key(
     raise RuntimeError("Went off the end of an infinite generator")
 
 
+def validate_attr_key(attr_name: str):
+    if _filter_alphanum(attr_name) != attr_name:
+        raise ValueError(f"Attribute name contains invalid characters: '{attr_name}'")
+
+
 def add_variables_to_expression(query_dict: dict, variables: dict) -> dict:
     """Attempt to make it easier to develop a query"""
     ea_names = query_dict.get("ExpressionAttributeNames", {})
     ea_values = query_dict.get("ExpressionAttributeValues", {})
     for k, v in variables.items():
-        ea_key = make_unique_expr_attr_key(k, set(ea_names) | set(ea_values))
-        name = f"#{ea_key}"
+        validate_attr_key(k)
+        name = f"#{k}"
         if name in ea_names:
             raise ValueError(
                 f"Cannot add a duplicate expression attribute "
                 f"name {name} to your query {query_dict}"
             )
-        ea_names[name] = name
-        name = f":{ea_key}"
+        ea_names[name] = k
+        name = f":{k}"
         if name in ea_values:
             raise ValueError(
                 f"Cannot add a duplicate expression attribute "
