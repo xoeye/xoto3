@@ -1,30 +1,23 @@
-from typing import Collection, Iterable, Callable
+import hashlib
 import string
+import os
+
+
+_HASH_LEN = int(os.environ.get("XOTO3_EXPR_ATTR_HASH_LENGTH", 8))
+# if you have some reason to be concerned about hash collisions you can always
+# set this to make your DynamoDB expression attribute names/values more verbose.
 
 
 def _filter_alphanum(s: str) -> str:
-    return "".join(c for c in s if c in string.ascii_letters or c in string.digits)
+    return "".join(c for c in s if c in string.ascii_letters or c in string.digits or c == "_")
 
 
-def _yield_randomly_extended_expr_attr_keys(start: str) -> Iterable[str]:
-    start = _filter_alphanum(start)
-    yield start
-    count = 0
-    while True:
-        yield start + str(count)
-        count += 1
-
-
-def make_unique_expr_attr_key(
-    attr_name: str,
-    current_names: Collection[str] = (),
-    tx_name: Callable[[str], str] = lambda x: ("#" + x),
-) -> str:
-    current = set(current_names)
-    for attempt in _yield_randomly_extended_expr_attr_keys(attr_name):
-        if tx_name(attempt) not in current:
-            return attempt
-    raise RuntimeError("Went off the end of an infinite generator")
+def make_unique_expr_attr_key(attr_name: str) -> str:
+    clean = _filter_alphanum(attr_name)
+    if clean == attr_name:
+        return clean
+    hashed = hashlib.sha256(attr_name.encode())
+    return clean + "__xoto3__" + hashed.hexdigest()[:_HASH_LEN]
 
 
 def validate_attr_key(attr_name: str):

@@ -34,14 +34,17 @@ def test_attributes_get_clean_names():
 
     assert res == dict(
         ExpressionAttributeNames={
-            "#newattr": "~new_attr",
-            "#newattr0": "~newattr",
-            "#oldattr": "~old_attr",
+            "#new_attr__xoto3__fd887820": "~new_attr",
+            "#newattr__xoto3__fd9efc05": "~newattr",
+            "#old_attr__xoto3__3986002a": "~old_attr",
             "#_anc_name": "id__",
         },
-        ExpressionAttributeValues={":newattr": True, ":newattr0": False},
+        ExpressionAttributeValues={
+            ":new_attr__xoto3__fd887820": True,
+            ":newattr__xoto3__fd9efc05": False,
+        },
         Key=dict(id__="234"),
         ReturnValues="ALL_NEW",
         ConditionExpression="attribute_exists(#_anc_name)",
-        UpdateExpression="SET #newattr = :newattr, #newattr0 = :newattr0 REMOVE #oldattr",
+        UpdateExpression="SET #new_attr__xoto3__fd887820 = :new_attr__xoto3__fd887820, #newattr__xoto3__fd9efc05 = :newattr__xoto3__fd9efc05 REMOVE #old_attr__xoto3__3986002a",
     )

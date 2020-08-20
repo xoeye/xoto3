@@ -1,8 +1,14 @@
+### 1.3.2
+
+- Addressed theoretical weakness in expression attribute naming by
+  appending hashes of the raw attribute name rather than incrementing
+  counts.
+
 ### 1.3.1
 
-- addressed bug in `add_variables_to_expression` which was resulting in 
+- addressed bug in `add_variables_to_expression` which was resulting in
   the generation of invalid queries.
-- reverted behavior from `add_variables_to_expression` which might have 
+- reverted behavior from `add_variables_to_expression` which might have
   resulted in queries being created with unreferenced dynamically suffixed
   AWS placeholders should an existing placeholder with the same name exist
   -- replaced with code to validate names instead.

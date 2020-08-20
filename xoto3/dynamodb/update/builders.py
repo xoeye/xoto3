@@ -86,7 +86,7 @@ def build_setattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, dict
     expr_attr_names: ty.Dict[str, str] = dict()
     expr_attr_values = dict()
     for attrname, value in attrs_dict.items():
-        key = make_unique_expr_attr_key(attrname, set(expr_attr_names))
+        key = make_unique_expr_attr_key(attrname)
         set_expr += f"#{key} = :{key}, "
         expr_attr_names[f"#{key}"] = attrname
         expr_attr_values[f":{key}"] = value
@@ -100,7 +100,7 @@ def build_addattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, dict
     ea_names: ty.Dict[str, str] = dict()
     ea_values = dict()
     for attrname, value in attrs_dict.items():
-        key = make_unique_expr_attr_key(attrname, set(ea_names))
+        key = make_unique_expr_attr_key(attrname)
         add_expr += f"#{key} :add{key}, "
         ea_names[f"#{key}"] = attrname
         ea_values[f":add{key}"] = value
@@ -113,7 +113,7 @@ def build_deleteattrs_for_update_item(attrs_dict: dict) -> ty.Tuple[str, dict, d
     ea_names: ty.Dict[str, str] = dict()
     ea_values = dict()
     for attrname, value in attrs_dict.items():
-        key = make_unique_expr_attr_key(attrname, set(ea_names))
+        key = make_unique_expr_attr_key(attrname)
         del_expr += f"#{key} :del{key}, "
         ea_names[f"#{key}"] = attrname
         ea_values[f":del{key}"] = value
