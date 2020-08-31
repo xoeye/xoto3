@@ -20,17 +20,11 @@ def make_unique_expr_attr_key(attr_name: str) -> str:
     return clean + "__xoto3__" + hashed.hexdigest()[:_HASH_LEN]
 
 
-def validate_attr_key(attr_name: str):
-    if _filter_alphanum(attr_name) != attr_name:
-        raise ValueError(f"Attribute name contains invalid characters: '{attr_name}'")
-
-
 def add_variables_to_expression(query_dict: dict, variables: dict) -> dict:
     """Attempt to make it easier to develop a query"""
     ea_names = query_dict.get("ExpressionAttributeNames", {})
     ea_values = query_dict.get("ExpressionAttributeValues", {})
     for k, v in variables.items():
-        validate_attr_key(k)
         name = f"#{k}"
         if name in ea_names:
             raise ValueError(
