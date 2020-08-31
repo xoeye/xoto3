@@ -30,12 +30,18 @@ def test_add_variables_to_expression():
 
 
 def test_add_variables_to_expression_with_bad_attribute_name():
-    variables = {"thingy": "THINGY", "~deleted__At": "2020-02-02T00:00:00.000000Z"}
+    variables = {"thingy": "THINGY", "deleted__At": "2020-02-02T00:00:00.000000Z"}
 
-    with pytest.raises(
-        ValueError, match="Attribute name contains invalid characters: '~deleted__At'"
-    ):
-        add_variables_to_expression(dict(), variables)
+    query_dict = add_variables_to_expression(dict(), variables)
+    assert query_dict["ExpressionAttributeNames"] == {
+        "#thingy": "thingy",
+        "#deleted__At": "deleted__At",
+    }
+    assert query_dict["ExpressionAttributeValues"] == {
+        ":thingy": "THINGY",
+        ":deleted__At": "2020-02-02T00:00:00.000000Z",
+    }
+
 
 
 def test_add_variables_to_expression_with_duplicate_attribute_name():
