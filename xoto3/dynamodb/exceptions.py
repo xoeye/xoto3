@@ -65,10 +65,11 @@ def raise_if_empty_getitem_response(
     is not what we want in many cases, and it's convenient to have a
     standard way of identifying ItemNotFound.
     """
-    exception = get_item_exception_type(nicename, ItemNotFoundException)
     if "Item" not in getitem_response:
         key_value = next(iter(key.values())) if key and len(key) == 1 else key
-        raise exception(f"{nicename} '{key_value}' does not exist!", key=key, table_name=table_name)
+        raise get_item_exception_type(nicename, ItemNotFoundException)(
+            f"{nicename} '{key_value}' does not exist!", key=key, table_name=table_name
+        )
 
 
 def translate_clienterrors(client_error: botocore.exceptions.ClientError, names_to_messages: dict):
