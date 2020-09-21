@@ -19,6 +19,7 @@ def logged_update_item(
     except Exception as e:
         # verbose logging if an error occurs
         logger.info("UpdateItem arguments", extra=dict(json=dict(update_args)))
+        e.update_item_arguments = update_args  # type: ignore
         raise e
 
 

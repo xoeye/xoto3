@@ -18,6 +18,7 @@ from botocore.exceptions import ClientError
 from xoto3.errors import client_error_name
 from xoto3.utils.dt import iso8601strict
 from xoto3.utils.tree_map import SimpleTransform
+from xoto3.dynamodb.exceptions import DynamoDbItemException
 from xoto3.dynamodb.types import TableResource
 from xoto3.dynamodb.get import strongly_consistent_get_item
 from xoto3.dynamodb.types import ItemKey, Item, AttrDict
@@ -38,7 +39,7 @@ MAX_TRANSACTION_SLEEP = float(os.environ.get("DYNAMO_VERSIONING_RANDOM_SLEEP_SEC
 logger = getLogger(__name__)
 
 
-class VersionedUpdateFailure(Exception):
+class VersionedUpdateFailure(DynamoDbItemException):
     pass
 
 
@@ -102,6 +103,7 @@ def versioned_diffed_update_item(
     """
     attempt = 0
     max_attempts_before_failure = int(max(1, max_attempts_before_failure))
+    update_arguments = None
     while attempt < max_attempts_before_failure:
         attempt += 1
         item = get_item(table, item_id)
@@ -139,7 +141,9 @@ def versioned_diffed_update_item(
                 id_that_exists=next(iter(item_id.keys())) if item else "",
             )
             logger.debug(expr)
-            update_item(table, item_id, **select_attributes_for_set_and_remove(item_diff), **expr)
+            update_arguments = select_attributes_for_set_and_remove(item_diff)
+            # store arguments for later logging
+            update_item(table, item_id, **update_arguments, **expr)
             return updated_item
         except ClientError as ce:
             if client_error_name(ce) == "ConditionalCheckFailedException":
@@ -163,8 +167,11 @@ def versioned_diffed_update_item(
             else:
                 raise
     raise VersionedUpdateFailure(
-        f"Failed to update item without performing overwrite {item_id}"
-        f"Was beaten to the update {attempt} times."
+        f"Failed to update item without performing overwrite {item_id}. "
+        f"Was beaten to the update {attempt} times.",
+        key=item_id,
+        table_name=table.name,
+        update_arguments=update_arguments,
     )
 
 

@@ -16,7 +16,7 @@ def GetItem(Table: TableResource, Key: ItemKey, nicename="Item", **kwargs) -> It
     """
     logger.debug(f"Get{nicename} {Key} from Table {Table.name}")
     response = Table.get_item(Key={**Key}, **kwargs)
-    raise_if_empty_getitem_response(response, nicename, key=Key)
+    raise_if_empty_getitem_response(response, nicename=nicename, key=Key, table_name=Table.name)
     return response["Item"]
 
 

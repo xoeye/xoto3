@@ -13,7 +13,8 @@ _NAMED_OUTPUTS: ty.Dict[str, str] = dict()
 
 def _get_cached_stack(stack_name: str):
     if stack_name not in _STACKS:
-        _STACKS[stack_name] = _CF_RESOURCE().Stack(stack_name)
+        stack = _CF_RESOURCE().Stack(stack_name)  # type: ignore
+        _STACKS[stack_name] = stack
     return _STACKS[stack_name]
 
 

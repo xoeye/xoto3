@@ -105,7 +105,7 @@ class MetricPutter:
 
         metric_dict = dict(Namespace=self.namespace, MetricData=[metric_data])
         logger.debug("put_metric", extra=dict(put_metric=metric_dict))
-        CLOUDWATCH_CLIENT().put_metric_data(**metric_dict)
+        CLOUDWATCH_CLIENT().put_metric_data(**metric_dict)  # type: ignore
 
 
 PutMetricReturner = ty.Callable[..., float]
