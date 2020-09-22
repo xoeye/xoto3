@@ -1,7 +1,12 @@
+### 1.4.0
+
+- Improved DynamoDB Item-related Exceptions for `GetItem`,
+  `put_but_raise_if_exists`, and `versioned_diffed_update_item`.
+
 ### 1.3.3
 
 - Allow any characters for attribute names in `add_variables_to_expression`.
-  * We have a lot of snake_cased attribute names. We should be able to use this function with those.  
+  - We have a lot of snake_cased attribute names. We should be able to use this function with those.
 
 ### 1.3.2
 

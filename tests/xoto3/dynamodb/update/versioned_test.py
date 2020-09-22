@@ -26,7 +26,7 @@ def test_versioned_diffed_update_item():
 
     def test_transform(item: Item) -> Item:
         item.pop("to_remove")
-        item["new"] = "value"
+        item["new"] = "abcxyz"
         return item
 
     called_times = [0]
@@ -148,14 +148,20 @@ def test_versioned_diffed_update_item():
         assert set_attrs and "item_version" in set_attrs
         raise ClientError({"Error": {"Code": "ConditionalCheckFailedException"}}, "update_item")
 
-    with pytest.raises(VersionedUpdateFailure):
+    with pytest.raises(VersionedUpdateFailure) as ve_info:
         versioned_diffed_update_item(
             FakeTableResource(),
             test_transform,
             test_item,
-            get_item=lambda x, y: test_item,
+            get_item=lambda x, y: dict(test_item, item_version=called_times[0]),
             update_item=fail_forever_updater_func,
         )
+    ve = ve_info.value
+    assert ve.table_name == "Fake"
+    assert ve.key == test_item
+    assert ve.update_arguments["remove_attrs"] == {"to_remove"}
+    assert ve.update_arguments["set_attrs"]["item_version"] == 25
+    assert ve.update_arguments["set_attrs"]["new"] == "abcxyz"
 
     assert called_times[0] == DEFAULT_MAX_ATTEMPTS_BEFORE_FAILURE
 

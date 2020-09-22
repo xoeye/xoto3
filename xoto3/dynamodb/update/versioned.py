@@ -18,6 +18,7 @@ from botocore.exceptions import ClientError
 from xoto3.errors import client_error_name
 from xoto3.utils.dt import iso8601strict
 from xoto3.utils.tree_map import SimpleTransform
+from xoto3.dynamodb.exceptions import DynamoDbItemException, get_item_exception_type
 from xoto3.dynamodb.types import TableResource
 from xoto3.dynamodb.get import strongly_consistent_get_item
 from xoto3.dynamodb.types import ItemKey, Item, AttrDict
@@ -38,7 +39,7 @@ MAX_TRANSACTION_SLEEP = float(os.environ.get("DYNAMO_VERSIONING_RANDOM_SLEEP_SEC
 logger = getLogger(__name__)
 
 
-class VersionedUpdateFailure(Exception):
+class VersionedUpdateFailure(DynamoDbItemException):
     pass
 
 
@@ -72,7 +73,7 @@ UpdateOrCreateItem = partial(UpdateItem, condition_exists=False)
 def versioned_diffed_update_item(
     table: TableResource,
     item_transformer: ItemTransformer,
-    item_id: ItemKey,
+    item_key: ItemKey = None,
     *,
     get_item: ItemGetter = strongly_consistent_get_item,
     update_item: ItemUpdater = UpdateOrCreateItem,
@@ -81,6 +82,8 @@ def versioned_diffed_update_item(
     last_written_key: str = "last_written_at",
     random_sleep_on_lost_race: bool = True,
     prewrite_transform: ty.Optional[SimpleTransform] = _DEFAULT_PREDIFF_TRANSFORM,
+    item_id: ItemKey = None,  # deprecated name, present for backward-compatibility
+    nicename: str = "Item",
 ) -> Item:
     """Performs an item read-transform-write loop until there are no intervening writes.
 
@@ -100,11 +103,15 @@ def versioned_diffed_update_item(
     will revert to fetching if the transaction fails because of an
     intervening write.
     """
+    item_key = item_key or item_id
+    assert item_key, "Must pass item_key or (deprecated) item_id"
+
     attempt = 0
     max_attempts_before_failure = int(max(1, max_attempts_before_failure))
+    update_arguments = None
     while attempt < max_attempts_before_failure:
         attempt += 1
-        item = get_item(table, item_id)
+        item = get_item(table, item_key)
         cur_item_version = item.get(item_version_key, 0)
 
         logger.debug(f"Current item version is {cur_item_version}")
@@ -112,13 +119,13 @@ def versioned_diffed_update_item(
         # do the incremental update
         updated_item = item_transformer(copy.deepcopy(item))
         if not updated_item:
-            logger.debug("No transformed item was returned; returning original item")
+            logger.debug(f"No transformed {nicename} was returned; returning original {nicename}")
             return item
         assert updated_item is not None
         item_diff = build_update_diff(item, updated_item, prediff_transform=prewrite_transform)
         if not item_diff:
             logger.info(
-                "A transformed item was returned but no meaningful difference was found.",
+                f"Transformed {nicename} was returned but no meaningful difference was found.",
                 extra=dict(json=dict(item=item, updated_item=updated_item)),
             )
             return item
@@ -136,15 +143,17 @@ def versioned_diffed_update_item(
             expr = versioned_item_expression(
                 cur_item_version,
                 item_version_key,
-                id_that_exists=next(iter(item_id.keys())) if item else "",
+                id_that_exists=next(iter(item_key.keys())) if item else "",
             )
             logger.debug(expr)
-            update_item(table, item_id, **select_attributes_for_set_and_remove(item_diff), **expr)
+            update_arguments = select_attributes_for_set_and_remove(item_diff)
+            # store arguments for later logging
+            update_item(table, item_key, **update_arguments, **expr)
             return updated_item
         except ClientError as ce:
             if client_error_name(ce) == "ConditionalCheckFailedException":
                 msg = (
-                    "Attempt %d to update item in table %s was beaten "
+                    "Attempt %d to update %s in table %s was beaten "
                     + "by a different update. Sleeping for %s seconds."
                 )
                 sleep = 0.0
@@ -154,17 +163,21 @@ def versioned_diffed_update_item(
                 logger.warning(
                     msg,
                     attempt,
+                    nicename,
                     table.name,
                     f"{sleep:.3f}",
                     extra=dict(
-                        json=dict(item_id=item_id, item_diff=item_diff, ce=str(ce), sleep=sleep)
+                        json=dict(item_key=item_key, item_diff=item_diff, ce=str(ce), sleep=sleep)
                     ),
                 )
             else:
                 raise
-    raise VersionedUpdateFailure(
-        f"Failed to update item without performing overwrite {item_id}"
-        f"Was beaten to the update {attempt} times."
+    raise get_item_exception_type(nicename, VersionedUpdateFailure)(
+        f"Failed to update {nicename} without performing overwrite {item_key}. "
+        f"Was beaten to the update {attempt} times.",
+        key=item_key,
+        table_name=table.name,
+        update_arguments=update_arguments,
     )
 
 

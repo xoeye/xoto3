@@ -12,18 +12,17 @@ from logging import getLogger
 from xoto3.errors import catch_named_clienterrors
 
 from .conditions import item_not_exists
-from .exceptions import AlreadyExistsException
+from .exceptions import ItemAlreadyExistsException, get_item_exception_type
 from .types import InputItem, TableResource, Item
 from .prewrite import dynamodb_prewrite
-from .utils.table import table_primary_keys
+from .utils.table import table_primary_keys, extract_key_from_item
 from .get import strongly_consistent_get_item
 
 logger = getLogger(__name__)
 
 
 def PutItem(Table: TableResource, Item: InputItem, *, nicename="Item", **kwargs) -> InputItem:
-    """Convenience wrapper that makes your item Dynamo-safe before writing.
-    """
+    """Convenience wrapper that makes your item Dynamo-safe before writing."""
     logger.debug(f"Put{nicename} into table {Table.name}", extra=dict(json=dict(item=Item)))
     Table.put_item(Item=dynamodb_prewrite(Item), **kwargs)
     return Item
@@ -53,13 +52,19 @@ def put_unless_exists(Table: TableResource, item: InputItem) -> Tuple[Optional[E
 def put_but_raise_if_exists(
     Table: TableResource, item: InputItem, *, nicename: str = "Item"
 ) -> InputItem:
-    """Wrapper for put_item that raises AlreadyExistsException if the item exists.
+    """Wrapper for put_item that raises ItemAlreadyExistsException if the item exists,
+    or a custom-generated subclass thereof if you have provided a better "nicename".
 
     If successful, just returns the passed item.
+
     """
     already_exists_cerror, _response = put_unless_exists(Table, item)
     if already_exists_cerror:
-        raise AlreadyExistsException(f"{nicename} already exists and was not overwritten!")
+        raise get_item_exception_type(nicename, ItemAlreadyExistsException)(
+            f"{nicename} already exists and was not overwritten!",
+            key=extract_key_from_item(Table, item),
+            table_name=Table.name,
+        )
     return item
 
 
@@ -67,7 +72,7 @@ def put_or_return_existing(table: TableResource, item: InputItem) -> Union[Item,
     try:
         put_but_raise_if_exists(table, item)
         return item
-    except AlreadyExistsException:
+    except ItemAlreadyExistsException:
         return strongly_consistent_get_item(
             table, {key: item[key] for key in table_primary_keys(table)}
         )
