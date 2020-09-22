@@ -8,8 +8,6 @@ from .types import ItemKey
 class DynamoDbException(Exception):
     """Wrapping error responses from Dynamo DB"""
 
-    pass
-
 
 class DynamoDbItemException(DynamoDbException):
     def __init__(self, msg: str, *, key: Optional[ItemKey] = None, table_name: str = "", **kwargs):
@@ -22,19 +20,13 @@ class DynamoDbItemException(DynamoDbException):
 class AlreadyExistsException(DynamoDbItemException):
     """Deprecated - prefer ItemAlreadyExistsException"""
 
-    pass
-
 
 class ItemAlreadyExistsException(AlreadyExistsException):
     """Backwards-compatible, more consistent name"""
 
-    pass
-
 
 class ItemNotFoundException(DynamoDbItemException):
     """Being more specific that an item was not found"""
-
-    pass
 
 
 X = TypeVar("X", bound=DynamoDbItemException)
