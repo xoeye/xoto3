@@ -1,3 +1,7 @@
+### 1.5.0
+
+`map_tree` now supports postorder transformations via keyword argument.
+
 ### 1.4.0
 
 - Improved DynamoDB Item-related Exceptions for `GetItem`,
