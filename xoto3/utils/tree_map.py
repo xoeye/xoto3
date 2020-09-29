@@ -1,7 +1,6 @@
-from typing import Tuple, Hashable, Callable, Any, Mapping, Set, Union, cast
-from functools import singledispatch, wraps
 import inspect
-
+from functools import singledispatch, wraps
+from typing import Any, Callable, Hashable, Mapping, Set, Tuple, Union, cast
 
 SimpleTransform = Callable[[Any], Any]
 
@@ -35,7 +34,7 @@ def coerce_transform(transform: TreeTransform) -> PathTransform:
     )
 
 
-def map_tree(transform: TreeTransform, obj: Any) -> Any:
+def map_tree(transform: TreeTransform, obj: Any, *, postorder: bool = False) -> Any:
     """Maps a tree made of Python general-purpose builtin containers.
 
     The tree property of the object is important - technically you may
@@ -49,6 +48,10 @@ def map_tree(transform: TreeTransform, obj: Any) -> Any:
     preorder operation before then recursing into mappings, lists,
     tuples, and sets, rendering a new corresponding builtin instance
     for each.
+
+    If you want a post-order call to your transform, pass the keyword
+    argument postorder=True. This will disable the use of the stop
+    return.
 
     Only applies the first recursive transform that matches the type
     of the provided object.
@@ -86,23 +89,32 @@ def map_tree(transform: TreeTransform, obj: Any) -> Any:
     paths only are provided.
 
     """
-    return _map_tree(coerce_transform(transform), obj)
+    return _map_tree(coerce_transform(transform), obj, postorder=postorder)
 
 
-def _map_tree(transform: PathTransform, obj: Any, *, path: KeyPath = ()) -> Any:
-    obj, stop = transform(obj, path)
-    if stop:
-        return obj
+def _map_tree(
+    transform: PathTransform, obj: Any, *, path: KeyPath = (), postorder: bool = False
+) -> Any:
+    if not postorder:
+        obj, stop = transform(obj, path)
+        if stop:
+            return obj
 
     # then apply the first builtin-type-matching recursive transform.
     if isinstance(obj, Mapping):
-        return {k: _map_tree(transform, v, path=path + (k,)) for k, v in obj.items()}
+        return {
+            k: _map_tree(transform, v, path=path + (k,), postorder=postorder)
+            for k, v in obj.items()
+        }
     if isinstance(obj, Set):
-        return {_map_tree(transform, member, path=path) for member in obj}
+        return {_map_tree(transform, member, path=path, postorder=postorder) for member in obj}
     if isinstance(obj, list):
-        return [_map_tree(transform, item, path=path) for item in obj]
+        return [_map_tree(transform, item, path=path, postorder=postorder) for item in obj]
     if isinstance(obj, tuple):
-        return tuple((_map_tree(transform, item, path=path) for item in obj))
+        return tuple((_map_tree(transform, item, path=path, postorder=postorder) for item in obj))
+
+    if postorder:
+        obj, _stop = transform(obj, path)
 
     return obj
 

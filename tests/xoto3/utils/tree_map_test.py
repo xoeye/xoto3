@@ -1,13 +1,15 @@
 from decimal import Decimal
 
+import pytest
+
+from xoto3.utils.dec import decimal_to_number
 from xoto3.utils.tree_map import (
+    compose,
+    make_path_only_transform,
+    make_path_stop_transform,
     map_tree,
     type_dispatched_transform,
-    make_path_stop_transform,
-    make_path_only_transform,
-    compose,
 )
-from xoto3.utils.dec import decimal_to_number
 
 
 def test_map_tree_idents():
@@ -76,3 +78,18 @@ def test_compose():
     d = dict(p=[1.2, 3.4, 8.8])
 
     assert map_tree(tx, d) == dict(p=["1i", "3i", "8i"])
+
+
+def test_postorder_transformation():
+    def coerce_to_int(o):
+        return int(o)
+
+    inp = dict(a=2.3, b=4.4)
+    with pytest.raises(TypeError):
+        map_tree(coerce_to_int, inp)
+
+    assert dict(a=2, b=4) == map_tree(coerce_to_int, inp, postorder=True)
+
+    assert dict(p=7, g=[2, 3, 4]) == map_tree(
+        coerce_to_int, dict(p=7.4, g=[2.01, 3.01, 4.01]), postorder=True
+    )
