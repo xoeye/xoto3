@@ -1,4 +1,11 @@
-### 1.5.0
+## 1.6.0
+
+- FailedRecordExceptions now contain the entire exception for each
+  failed record. This is a very minor feature.
+- Removed some unnecessarily verbose logging to put library users back
+  in control.
+
+## 1.5.0
 
 `map_tree` now supports postorder transformations via keyword argument.
 

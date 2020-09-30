@@ -15,14 +15,10 @@ application-level code, or may be wrapped by some other library
 primitive like the Dead Letter service.
 """
 import typing as ty
-import traceback
-from logging import getLogger
-from typing_extensions import TypedDict, Protocol
 
-from .types import LambdaEntryPoint, LambdaEntryPointDecorator, Event, LambdaContext
+from typing_extensions import Protocol, TypedDict
 
-logger = getLogger(__name__)
-
+from .types import Event, LambdaContext, LambdaEntryPoint, LambdaEntryPointDecorator
 
 # types
 
@@ -30,7 +26,8 @@ Record = ty.Dict[str, ty.Any]
 RecordProcessor = ty.Callable[[Record, int], ty.Any]
 RecordContainer = TypedDict("RecordContainer", {"Records": ty.List[Record]})
 RecordFailure = TypedDict(
-    "RecordFailure", {"record_index": int, "exception_name": str, "exception_str": str}
+    "RecordFailure",
+    {"record_index": int, "exception_name": str, "exception_str": str, "exception": Exception,},
 )
 
 
@@ -66,16 +63,12 @@ def process_records_yield_failures(
         try:
             record_processor(record, i)
         except Exception as e:
-            print(traceback.format_exc())
             record_failure: RecordFailure = dict(
                 # record=record,  # this will make some dead letters too large
                 record_index=i,
                 exception_name=str(e.__class__.__name__),
                 exception_str=str(e),
-            )
-            logger.exception(
-                f"Exception {e.__class__.__name__} when processing record",
-                extra=dict(json=dict(failure=record_failure, record=record)),
+                exception=e,
             )
             yield record_failure
 
@@ -124,7 +117,6 @@ def make_decorated_individual_stream_processor_decorator(
             records = event["Records"]
 
             def record_processor(record: Record, record_index: int):
-                logger.debug("Record to process", extra=dict(json=dict(record=record)))
                 if record_filter(record):
                     processor(
                         record_prep_transformer(record),
@@ -132,10 +124,6 @@ def make_decorated_individual_stream_processor_decorator(
                         record_index=record_index,
                         event=event,
                         context=context,
-                    )
-                else:
-                    logger.info(
-                        "Dropping record because of filter", extra=dict(json=dict(record=record))
                     )
 
             failures = list(process_records_yield_failures(record_processor, records))
