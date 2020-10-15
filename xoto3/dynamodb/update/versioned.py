@@ -2,33 +2,36 @@
 
 to prevent simultaneous read-write conflicts.
 """
-import typing as ty
 import copy
-from datetime import datetime
-import time
-import random
 import os
-from logging import getLogger
+import random
+import time
+import typing as ty
+from datetime import datetime
 from functools import partial
-
-from typing_extensions import Protocol
+from logging import getLogger
 
 from botocore.exceptions import ClientError
+from typing_extensions import Protocol
 
+from xoto3.dynamodb.constants import DEFAULT_ITEM_NAME
+from xoto3.dynamodb.exceptions import DynamoDbItemException, get_item_exception_type
+from xoto3.dynamodb.get import (
+    GetItem,
+    strongly_consistent_get_item,
+    strongly_consistent_get_item_if_exists,
+)
+from xoto3.dynamodb.types import AttrDict, Item, ItemKey, TableResource
 from xoto3.errors import client_error_name
 from xoto3.utils.dt import iso8601strict
 from xoto3.utils.tree_map import SimpleTransform
-from xoto3.dynamodb.exceptions import DynamoDbItemException, get_item_exception_type
-from xoto3.dynamodb.types import TableResource
-from xoto3.dynamodb.get import strongly_consistent_get_item
-from xoto3.dynamodb.types import ItemKey, Item, AttrDict
+
 from .core import UpdateItem
 from .diff import (
+    _DEFAULT_PREDIFF_TRANSFORM,
     build_update_diff,
     select_attributes_for_set_and_remove,
-    _DEFAULT_PREDIFF_TRANSFORM,
 )
-
 
 DEFAULT_MAX_ATTEMPTS_BEFORE_FAILURE = 25
 # this number is somewhat arbitrary, but infinite loops are very bad
@@ -83,7 +86,7 @@ def versioned_diffed_update_item(
     random_sleep_on_lost_race: bool = True,
     prewrite_transform: ty.Optional[SimpleTransform] = _DEFAULT_PREDIFF_TRANSFORM,
     item_id: ItemKey = None,  # deprecated name, present for backward-compatibility
-    nicename: str = "Item",
+    nicename: str = DEFAULT_ITEM_NAME,
 ) -> Item:
     """Performs an item read-transform-write loop until there are no intervening writes.
 
@@ -109,9 +112,12 @@ def versioned_diffed_update_item(
     attempt = 0
     max_attempts_before_failure = int(max(1, max_attempts_before_failure))
     update_arguments = None
+
+    nice_get_item = _nicename_getter(nicename, get_item)
+
     while attempt < max_attempts_before_failure:
         attempt += 1
-        item = get_item(table, item_key)
+        item = nice_get_item(table, item_key)
         cur_item_version = item.get(item_version_key, 0)
 
         logger.debug(f"Current item version is {cur_item_version}")
@@ -167,7 +173,7 @@ def versioned_diffed_update_item(
                     table.name,
                     f"{sleep:.3f}",
                     extra=dict(
-                        json=dict(item_key=item_key, item_diff=item_diff, ce=str(ce), sleep=sleep)
+                        json=dict(item_key=item_key, item_diff=item_diff, ce=str(ce), sleep=sleep,)
                     ),
                 )
             else:
@@ -211,7 +217,12 @@ def versioned_item_expression(
     )
 
 
-def make_prefetched_get_item(item: Item, refetch_getter: ItemGetter = strongly_consistent_get_item):
+def make_prefetched_get_item(
+    item: Item,
+    refetch_getter: ItemGetter = strongly_consistent_get_item,
+    *,
+    nicename: str = DEFAULT_ITEM_NAME,
+):
     """Useful for versioned updates where you've already fetched the item
     once and in most cases would not need to fetch again before running
     the update, but would want a versioned update to retry with a fresh
@@ -225,6 +236,46 @@ def make_prefetched_get_item(item: Item, refetch_getter: ItemGetter = strongly_c
         if not used:
             used = True
             return item
-        return refetch_getter(table, key)
+        return _nicename_getter(nicename, refetch_getter)(table, key)
 
     return prefetched_get_item
+
+
+def _nicename_getter(nicename: str, get_item: ItemGetter) -> ItemGetter:
+    """I didn't write the ItemGetter Protocol to handle the possibility of
+    keyword arguments, which means that the nicename as supplied to
+    versioned_diffed_update_item cannot be used in the context of the
+    call to the caller-supplied get_item implementation.
+
+    In the default case, and in cases where the getter
+    supplied is defined by us, we can safely use nicename, which
+    provides helpful additional context if the Item is not found.
+
+    Alternative approaches include EAFP (try, catch TypeError, retry
+    without nicename) as well as using `inspect` to dynamically assess
+    whether the keyword argument would be accepted.
+
+    This should be more performant than EAFP in the failure case,
+    nearly as performant in the success case, and (this is the main
+    thing) doesn't require another function to enter the stack trace
+    for an exception (such as ItemNotFoundException).
+
+    Inspect is rejected because it's expensive. _Technically_ it would
+    be possible to amortize the cost of inspect by caching the
+    results, and that's a little bit tempting, but if the callers are
+    using partial application then they might be recreating the
+    function every time and we'd have to limit the cache size, etc....
+
+    Overall, it seems simplest to try to add some helpful sugar/info
+    in the standard cases, and let callers do their own work for cases
+    where they're throwing their own exceptions or doing other fancy
+    stuff.
+
+    """
+    if (
+        get_item is strongly_consistent_get_item
+        or get_item is strongly_consistent_get_item_if_exists
+        or get_item is GetItem
+    ):
+        return partial(get_item, nicename=nicename)
+    return get_item
