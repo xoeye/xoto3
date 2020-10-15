@@ -1,7 +1,5 @@
-import os
 import typing as ty
 
-import boto3
 import pytest
 from botocore.exceptions import ClientError
 
@@ -236,22 +234,7 @@ def test_make_prefetched_get_item():
     assert prefetched_getter(None, dict()) == dict(got=True)
 
 
-XOTO3_INTEGRATION_TEST_ID_TABLE_NAME = os.environ.get(
-    "XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME"
-)
-
-
-_INTEGRATION_ID_TABLE = (
-    boto3.resource("dynamodb").Table(XOTO3_INTEGRATION_TEST_ID_TABLE_NAME)
-    if XOTO3_INTEGRATION_TEST_ID_TABLE_NAME
-    else None
-)
-
-
-@pytest.mark.skipif(
-    not XOTO3_INTEGRATION_TEST_ID_TABLE_NAME, reason="No integration id table was defined",
-)
-def test_nicename_getter():
+def test_nicename_getter(integration_test_id_table):
     TestItemNotFoundException = get_item_exception_type("TestItem", ItemNotFoundException)
 
     def no_up(item):
@@ -259,5 +242,5 @@ def test_nicename_getter():
 
     with pytest.raises(TestItemNotFoundException):
         versioned_diffed_update_item(
-            _INTEGRATION_ID_TABLE, no_up, dict(id="should-never-exist"), nicename="TestItem",
+            integration_test_id_table, no_up, dict(id="should-never-exist"), nicename="TestItem",
         )

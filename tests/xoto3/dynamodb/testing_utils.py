@@ -1,7 +1,10 @@
+import os
+
+import boto3
 import pytest
 
 from xoto3.dynamodb.put import PutItem
-from xoto3.dynamodb.types import TableResource, InputItem
+from xoto3.dynamodb.types import InputItem, TableResource
 from xoto3.dynamodb.utils.table import extract_key_from_item
 
 
@@ -20,3 +23,18 @@ def make_pytest_put_fixture_for_table(table: TableResource):
             table.delete_item(Key=key)
 
     return put_item_fixture
+
+
+XOTO3_INTEGRATION_TEST_ID_TABLE_NAME = os.environ.get(
+    "XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME"
+)
+
+
+@pytest.fixture("module")
+def integration_test_id_table():
+    if XOTO3_INTEGRATION_TEST_ID_TABLE_NAME:
+        table = boto3.resource("dynamodb").Table(XOTO3_INTEGRATION_TEST_ID_TABLE_NAME)
+        if table.name:
+            return table
+    pytest.skip(reason="No integration id table was defined")
+    return None
