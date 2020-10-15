@@ -1,15 +1,18 @@
+import os
 import typing as ty
 
-from botocore.exceptions import ClientError
+import boto3
 import pytest
+from botocore.exceptions import ClientError
 
-from xoto3.dynamodb.types import ItemKey, AttrDict, Item, TableResource
-from xoto3.dynamodb.update.versioned import (
-    versioned_diffed_update_item,
-    VersionedUpdateFailure,
-    DEFAULT_MAX_ATTEMPTS_BEFORE_FAILURE,
-)
 import xoto3.dynamodb.update.versioned as xdv
+from xoto3.dynamodb.exceptions import ItemNotFoundException, get_item_exception_type
+from xoto3.dynamodb.types import AttrDict, Item, ItemKey, TableResource
+from xoto3.dynamodb.update.versioned import (
+    DEFAULT_MAX_ATTEMPTS_BEFORE_FAILURE,
+    VersionedUpdateFailure,
+    versioned_diffed_update_item,
+)
 
 xdv.MAX_TRANSACTION_SLEEP = 0.0  # no sleeps for the test
 
@@ -206,7 +209,7 @@ def test_string_item_version_coercion_to_int():
 
 def test_update_only_versioning_expression():
     assert xdv.versioned_item_expression(2, id_that_exists="id") == dict(
-        ExpressionAttributeNames={"#itemVersion": "item_version", "#idThatExists": "id"},
+        ExpressionAttributeNames={"#itemVersion": "item_version", "#idThatExists": "id",},
         ExpressionAttributeValues={":curItemVersion": 2},
         ConditionExpression="#itemVersion = :curItemVersion OR ( attribute_not_exists(#itemVersion) AND attribute_exists(#idThatExists) )",
     )
@@ -231,3 +234,30 @@ def test_make_prefetched_get_item():
     assert prefetched_getter(None, dict()) == item
     assert prefetched_getter(None, dict()) == dict(got=True)
     assert prefetched_getter(None, dict()) == dict(got=True)
+
+
+XOTO3_INTEGRATION_TEST_ID_TABLE_NAME = os.environ.get(
+    "XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME"
+)
+
+
+_INTEGRATION_ID_TABLE = (
+    boto3.resource("dynamodb").Table(XOTO3_INTEGRATION_TEST_ID_TABLE_NAME)
+    if XOTO3_INTEGRATION_TEST_ID_TABLE_NAME
+    else None
+)
+
+
+@pytest.mark.skipif(
+    not XOTO3_INTEGRATION_TEST_ID_TABLE_NAME, reason="No integration id table was defined",
+)
+def test_nicename_getter():
+    TestItemNotFoundException = get_item_exception_type("TestItem", ItemNotFoundException)
+
+    def no_up(item):
+        return item
+
+    with pytest.raises(TestItemNotFoundException):
+        versioned_diffed_update_item(
+            _INTEGRATION_ID_TABLE, no_up, dict(id="should-never-exist"), nicename="TestItem",
+        )
