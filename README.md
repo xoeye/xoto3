@@ -51,3 +51,13 @@ Some highlights:
 - Various serialization utilities (datetimes, decimals, JSON helpers)
 - `pipe_multiprocessing` - a Process Pool for places like AWS Lambda
   where Python's built-in shared memory-dependent Pool does not work.
+
+## Testing
+
+You can run all unit tests with `pipenv run pytest tests`.
+
+You can additionally include all the DynamoDB integration tests by
+setting an environment variable that is the name of a DynamoDB table
+with a primary key that is a partition key of `id` and no range
+key. The name of the environment variable to be set is
+`XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME`.
