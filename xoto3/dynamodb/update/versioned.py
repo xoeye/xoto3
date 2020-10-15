@@ -274,8 +274,8 @@ def _nicename_getter(nicename: str, get_item: ItemGetter) -> ItemGetter:
     """
     if (
         get_item is strongly_consistent_get_item
-        or get_item is strongly_consistent_get_item_if_exists
         or get_item is GetItem
+        or get_item is strongly_consistent_get_item_if_exists
     ):
         return partial(get_item, nicename=nicename)
     return get_item
