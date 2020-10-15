@@ -2,14 +2,12 @@ import os
 import random
 from collections import defaultdict
 
-import pytest
-
 import boto3
+import pytest
 
 from xoto3.dynamodb.update import versioned_diffed_update_item
 from xoto3.dynamodb.utils.expressions import add_variables_to_expression
-from xoto3.dynamodb.utils.table import table_primary_keys, extract_key_from_item
-
+from xoto3.dynamodb.utils.table import extract_key_from_item, table_primary_keys
 
 _TEST_TABLE_NAME = os.environ.get("XOTO3_TEST_DYNAMODB_TABLE_NAME", "")
 
@@ -41,7 +39,6 @@ def test_add_variables_to_expression_with_bad_attribute_name():
         ":thingy": "THINGY",
         ":deleted__At": "2020-02-02T00:00:00.000000Z",
     }
-
 
 
 def test_add_variables_to_expression_with_duplicate_attribute_name():
@@ -82,24 +79,20 @@ def fix_item():
             table.delete_item(Key=extract_key_from_item(table, item))
 
 
-@pytest.mark.integ
-def test_expression_attributes_against_dynamodb(fix_item):
-    assert _TEST_TABLE_NAME, "Cannot test without an available table"
-    table = boto3.resource("dynamodb").Table(_TEST_TABLE_NAME)
-
+def test_expression_attributes_against_dynamodb(fix_item, integration_test_id_table):
     item_random_key = {
         attr: "xoto3-integ-test" + str(random.randint(0, 99999999999))
-        for attr in table_primary_keys(table)
+        for attr in table_primary_keys(integration_test_id_table)
     }
     # requires string attributes for the primary key because i'm too
     # lazy to make this key generation fancier for a test.
 
     bad_attr = "~known-bad*chars"
-    fix_item(table, {**item_random_key, **{bad_attr: "some random data"}})
+    fix_item(integration_test_id_table, {**item_random_key, **{bad_attr: "some random data"}})
 
     def del_bad_attr(item):
         item.pop(bad_attr, None)
         return item
 
-    result = versioned_diffed_update_item(table, del_bad_attr, item_random_key)
+    result = versioned_diffed_update_item(integration_test_id_table, del_bad_attr, item_random_key)
     assert bad_attr not in result
