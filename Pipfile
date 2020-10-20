@@ -12,6 +12,7 @@ dataclasses = "*"
 pytest = "~=5.0"
 mypy = ">=0.770"
 pylint = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.7"

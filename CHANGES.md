@@ -1,3 +1,10 @@
+## 1.7.0
+
+- `versioned_diffed_update_item` more fully supports the use of the
+  `nicename` keyword argument, providing more specific Exceptions in
+  the case of the item not existing before the update.
+- Improved typing for various query helpers in `xoto3.dynamodb.query`.
+
 ## 1.6.0
 
 - FailedRecordExceptions now contain the entire exception for each

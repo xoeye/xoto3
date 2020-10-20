@@ -1,5 +1,6 @@
 """Exceptions for our Dynamo usage"""
-from typing import Optional, TypeVar, Type, Dict, Tuple
+from typing import Dict, Optional, Tuple, Type, TypeVar
+
 import botocore.exceptions
 
 from .types import ItemKey

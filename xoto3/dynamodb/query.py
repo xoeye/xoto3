@@ -2,13 +2,17 @@
 
 All of these functional query builders assume that you will start with single_partition.
 """
-from typing import Dict, Any, Optional
 from copy import deepcopy
 from functools import partial
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from .types import Index, KeyAttributeType, TableQuery
-from .utils.index import hash_key_name, range_key_name
-from .utils.index import find_index, require_index  # noqa # included only for cleaner imports
+from .utils.index import (  # noqa # included only for cleaner imports
+    find_index,
+    hash_key_name,
+    range_key_name,
+    require_index,
+)
 
 
 def single_partition(index: Index, partition_value: KeyAttributeType) -> TableQuery:
@@ -34,7 +38,10 @@ def single_partition(index: Index, partition_value: KeyAttributeType) -> TableQu
     return query
 
 
-def order(ascending: bool):
+QueryTransformer = Callable[[TableQuery], TableQuery]
+
+
+def order(ascending: bool) -> QueryTransformer:
     """Creates a query builder"""
 
     def tx_query(query: TableQuery) -> TableQuery:
@@ -48,14 +55,14 @@ ascending = order(ascending=True)
 descending = order(ascending=False)
 
 
-def limit(limit: int):
+def limit(limit: int) -> QueryTransformer:
     def tx_query(query: TableQuery) -> TableQuery:
         return dict(query, Limit=limit) if limit else query
 
     return tx_query
 
 
-def page(last_evaluated_key: dict):
+def page(last_evaluated_key: dict) -> QueryTransformer:
     """Resume a query on the page represented by the LastEvaluatedKey you
     previously received.
 
@@ -85,8 +92,8 @@ specifically a pagination of a previous query.
 
 
 def within_range(
-    index: Index, *, gte: Optional[KeyAttributeType] = None, lte: Optional[KeyAttributeType] = None
-):
+    index: Index, *, gte: Optional[KeyAttributeType] = None, lte: Optional[KeyAttributeType] = None,
+) -> QueryTransformer:
     by = range_key_name(index)
 
     expr_attr_names = dict()
@@ -136,6 +143,8 @@ def pipe(*funcs):
     return piped
 
 
-def in_index(index: Index):
+def in_index(
+    index: Index,
+) -> Tuple[Callable[[KeyAttributeType], TableQuery], Callable[..., QueryTransformer]]:
     """Shorthand for calling single_partition and within_range separately"""
     return partial(single_partition, index), partial(within_range, index)
