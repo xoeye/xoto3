@@ -1,5 +1,5 @@
-import typing as ty
 import json
+import typing as ty
 
 import boto3
 
@@ -9,7 +9,9 @@ def yield_record_bodies_from_sqs_event(event: dict) -> ty.Iterable:
         yield json.loads(record["body"])
 
 
-def yield_and_ack_sqs_messages(queue_url: str, limit: int = 0, accept=None) -> ty.Iterable[dict]:
+def yield_and_ack_sqs_messages(
+    queue_url: str, limit: int = 0, accept=None, *, WaitTimeSeconds: int = 1, **kwargs
+) -> ty.Iterable[dict]:
     """Generates messages from an SQS queue.
 
     Note: this continues to yield messages until the queue is empty,
@@ -24,7 +26,11 @@ def yield_and_ack_sqs_messages(queue_url: str, limit: int = 0, accept=None) -> t
 
     while recvd < limit or limit == 0:
         resp = sqs_client.receive_message(
-            QueueUrl=queue_url, AttributeNames=["All"], MaxNumberOfMessages=10
+            QueueUrl=queue_url,
+            AttributeNames=["All"],
+            MaxNumberOfMessages=10,
+            WaitTimeSeconds=WaitTimeSeconds,
+            **kwargs,
         )
 
         try:
