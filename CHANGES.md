@@ -1,3 +1,7 @@
+### 1.7.1
+
+Safer long-polling default for the SQS poll utility.
+
 ## 1.7.0
 
 - `versioned_diffed_update_item` more fully supports the use of the
