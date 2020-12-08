@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 PKG_NAME = "xoto3"
 about: dict = dict()
@@ -20,10 +20,6 @@ setup(
     packages=find_packages(),
     package_data={"": ["py.typed"]},
     python_requires=">=3.6",
-    install_requires=[
-        "boto3 >= 1.9",
-        "typing-extensions >= 3.7",
-        "dataclasses;python_version<'3.7'",
-    ],
+    install_requires=["boto3 >= 1.9", "typing-extensions >= 3.7",],
     # it is important to keep these install_requires basically in sync with the Pipfile as well.
 )

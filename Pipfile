@@ -6,7 +6,6 @@ verify_ssl = true
 xoto3 = {path = ".",editable = true}
 boto3 = ">=1.9"
 typing-extensions = "*"
-dataclasses = "*"
 
 [dev-packages]
 pytest = "~=5.0"
