@@ -1,6 +1,10 @@
+## 1.8.0
+
+- Improved utilities and types for CloudWatch Metrics.
+
 ### 1.7.1
 
-Safer long-polling default for the SQS poll utility.
+- Safer long-polling default for the SQS poll utility.
 
 ## 1.7.0
 
@@ -18,7 +22,7 @@ Safer long-polling default for the SQS poll utility.
 
 ## 1.5.0
 
-`map_tree` now supports postorder transformations via keyword argument.
+- `map_tree` now supports postorder transformations via keyword argument.
 
 ### 1.4.0
 
