@@ -67,3 +67,53 @@ for key, item in bg.BatchGetItem(table, very_long_iterable_of_content_ids):
     else:
         print('Item {key} not present')
 ```
+
+## versioned_transact_write_items
+
+You can write a transaction with boto3 directly, but what do you do when it fails?
+
+This utility allows you to express your multi-item write operation as
+a pure function with a simple API such that your code is pure business
+logic, leaving the implementation details of fetching, attempting,
+refetching, and eventually giving up to the utility.
+
+```python
+import xoto3.dynamodb.write_versioned as wv
+
+def context(*_args):
+    user_key = dict(id="bob")
+    group_key = dict(pk="team42")
+
+    def add_user_to_new_or_existing_group(t: wv.VersionedTransaction) -> wv.VersionedTransaction:
+        user = wv.require(t, "User", user_key)
+        assert user, "require will raise if the item does not exist"
+        group = wv.get(t, "Group", group_key)
+
+        if group_key not in user["groups"]:
+            user["groups"].append(group_key)
+            t = wv.put(t, "User", user)
+
+        if group:
+            if user_key not in group["members"]:
+                group["members"].append(user_key)
+        else:
+            group = dict(group_key, members=[user_key])
+
+        if group != wv.get(t, "Group", group_key):
+            # if there was a change to the group
+            t = wv.put(t, "Group", group)
+        return t
+
+    wv.versioned_transact_write_items(
+        add_user_to_new_or_existing_group,
+        {
+            "User": [user_key],
+            "Group": [group_key],
+        },
+    )
+```
+
+The above code will ensure that the 'state' of the collection of items
+as defined by your function is fully realized without intervening
+transactions, or retried with the new state of those items if the
+transaction is beaten or otherwise interfered with.
