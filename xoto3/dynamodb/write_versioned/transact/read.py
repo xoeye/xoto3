@@ -7,9 +7,10 @@ from xoto3.dynamodb.constants import DEFAULT_ITEM_NAME
 from xoto3.dynamodb.exceptions import get_item_exception_type, raise_if_empty_getitem_response
 from xoto3.dynamodb.types import Item, ItemKey
 
+from .ddb_api import table_name as _table_name
 from .errors import ItemUnknownToTransactionError, TableUnknownToTransactionError
 from .keys import hashable_key
-from .types import VersionedTransaction
+from .types import TableNameOrResource, VersionedTransaction
 
 
 def _ident(i: Item) -> Item:
@@ -18,7 +19,7 @@ def _ident(i: Item) -> Item:
 
 def get(
     transaction: VersionedTransaction,
-    table_name: str,
+    table: TableNameOrResource,
     item_key: ItemKey,
     *,
     copy: bool = True,
@@ -34,6 +35,7 @@ def get(
     disable this behavior and then modify one of the retrieved items
     directly. Caveat emptor...
     """
+    table_name = _table_name(table)
     if table_name not in transaction.tables:
         raise TableUnknownToTransactionError(table_name)
 
@@ -52,12 +54,13 @@ def get(
 
 def require(
     transaction: VersionedTransaction,
-    table_name: str,
+    table: TableNameOrResource,
     item_key: ItemKey,
     *,
     nicename: str = DEFAULT_ITEM_NAME,
     **kwargs,
 ) -> Item:
+    table_name = _table_name(table)
     item = get(transaction, table_name, item_key, nicename=nicename, **kwargs)
     if not item:
         raise_if_empty_getitem_response(

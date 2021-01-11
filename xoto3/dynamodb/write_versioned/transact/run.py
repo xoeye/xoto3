@@ -59,9 +59,9 @@ def versioned_transact_write_items(
     ConditionChecks on unwritten items, rather than the present
     general assertion that their item_version was not changed.
 
-    This is only to be preferred when multiple items are involved.
-    Otherwise, versioned_diffed_update_item is cheaper.
-
+    The default implementation for transact_write_items will also
+    attempt to optimize your usage by reverting to a simple Put or
+    Delete if you only operate on a single item.
     """
     batch_get_item, transact_write_items = boto3_impl_defaults(
         batch_get_item, transact_write_items,

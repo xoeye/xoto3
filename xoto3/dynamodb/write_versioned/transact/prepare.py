@@ -17,9 +17,9 @@ def _deduplicate_and_validate_keys(keys: Collection[ItemKey]) -> Iterable[ItemKe
         if key_attributes:
             assert (
                 set(key.keys()) == key_attributes
-            ), f"Item keys must have identical attribute names. {key_attributes} {set(key.keys())}"
+            ), f"Item keys must have identical attribute names. {key_attributes} != {set(key.keys())}"
         else:
-            key_attributes == set(key.keys())
+            key_attributes = set(key.keys())
         if tk not in seen:
             seen.add(tk)
             yield key

@@ -1,4 +1,5 @@
 """Private implementation details for versioned_transact_write_items"""
+from collections import defaultdict
 from functools import partial
 from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, cast
 
@@ -16,6 +17,7 @@ from .types import (
     BatchGetItem,
     ItemKeysByTableName,
     ItemsByTableName,
+    TableNameOrResource,
     TransactWriteItems,
     VersionedTransaction,
 )
@@ -26,6 +28,12 @@ _RetryableTransactionCancelledErrorCodes = {
     "ThrottlingError",
     "ProvisionedThroughputExceeded",
 }
+
+
+def table_name(table: TableNameOrResource) -> str:
+    if not isinstance(table, str):
+        return table.name
+    return table
 
 
 def _collect_codes(resp: dict) -> Set[str]:
@@ -46,23 +54,25 @@ class BatchGetResponse(TypedDict):
 
 class Boto3BatchGetItem(Protocol):
     def __call__(self, RequestItems: Mapping[str, dict], **__kwargs) -> BatchGetResponse:
-        ...
+        ...  # pragma: nocover
 
 
 def _ddb_batch_get_item(
     batch_get_item: Boto3BatchGetItem, item_keys_by_table_name: ItemKeysByTableName,
 ) -> ItemsByTableName:
     # todo handle loop
-    response = batch_get_item(
-        RequestItems={
-            table_name: dict(Keys=item_keys, ConsistentRead=True)
-            for table_name, item_keys in item_keys_by_table_name.items()
-            if item_keys  # don't request things from unused tables...
-        }
-    )
-    unprocessed_keys = response.get("UnprocessedKeys")  # type: ignore
-    assert not unprocessed_keys, "Batch too large for processing as a transaction."
-    return response["Responses"]
+    unprocessed_keys = {
+        table_name: dict(Keys=item_keys, ConsistentRead=True)
+        for table_name, item_keys in item_keys_by_table_name.items()
+        if item_keys  # don't make empty request to a table
+    }
+    results = defaultdict(list)
+    while unprocessed_keys:
+        response = batch_get_item(RequestItems=unprocessed_keys)
+        unprocessed_keys = response.get("UnprocessedKeys")  # type: ignore
+        for table_name, items in response["Responses"].items():
+            results[table_name].extend(items)
+    return results
 
 
 def make_transact_multiple_but_optimize_single(ddb_client):

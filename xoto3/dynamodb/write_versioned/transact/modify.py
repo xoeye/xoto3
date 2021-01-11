@@ -5,20 +5,13 @@ from typing import NamedTuple, Optional, Union
 from xoto3.dynamodb.constants import DEFAULT_ITEM_NAME
 from xoto3.dynamodb.exceptions import get_item_exception_type
 from xoto3.dynamodb.prewrite import dynamodb_prewrite
-from xoto3.dynamodb.types import Item, ItemKey, TableResource
+from xoto3.dynamodb.types import Item, ItemKey
 from xoto3.utils.tree_map import SimpleTransform
 
+from .ddb_api import table_name as _table_name
 from .errors import ItemUnknownToTransactionError, TableUnknownToTransactionError
 from .keys import hashable_key, key_from_item
-from .types import VersionedTransaction, _TableData
-
-TableNameOrResource = Union[str, TableResource]
-
-
-def _tbl_name(table: TableNameOrResource) -> str:
-    if isinstance(table, TableResource):
-        return table.name
-    return table
+from .types import TableNameOrResource, VersionedTransaction, _TableData
 
 
 class Put(NamedTuple):
@@ -40,7 +33,7 @@ def _write(
     nicename: str = DEFAULT_ITEM_NAME,
 ) -> VersionedTransaction:
     """Shared put/delete implementation - not meant for direct use at this time."""
-    table_name = _tbl_name(table)
+    table_name = _table_name(table)
     if table_name not in transaction.tables:
         raise TableUnknownToTransactionError(table_name)
     items, effects, key_attributes = transaction.tables[table_name]

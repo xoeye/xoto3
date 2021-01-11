@@ -13,11 +13,12 @@ from typing import (
 
 from typing_extensions import Protocol
 
-from xoto3.dynamodb.types import Item, ItemKey, KeyAttributeType
+from xoto3.dynamodb.types import Item, ItemKey, KeyAttributeType, TableResource
 
 HashableItemKey = Union[KeyAttributeType, Tuple[KeyAttributeType, KeyAttributeType]]
 ItemKeysByTableName = Mapping[str, Collection[ItemKey]]
 ItemsByTableName = Mapping[str, Sequence[Item]]
+TableNameOrResource = Union[str, TableResource]
 
 
 class _TableData(NamedTuple):
@@ -47,9 +48,9 @@ class BatchGetItem(Protocol):
     def __call__(
         self, __item_keys_by_table_name: ItemKeysByTableName, **_kwargs
     ) -> ItemsByTableName:
-        ...
+        ...  # pragma: nocover
 
 
 class TransactWriteItems(Protocol):
     def __call__(self, *, TransactItems: List[dict], **_kwargs) -> Any:
-        ...
+        ...  # pragma: nocover

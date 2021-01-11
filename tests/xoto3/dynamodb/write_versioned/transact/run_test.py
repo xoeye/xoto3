@@ -122,7 +122,7 @@ def test_integration_test_inc_and_create_and_delete(
     def inc_and_create_and_delete(tx: VersionedTransaction) -> VersionedTransaction:
         test1 = require(tx, integration_test_id_table.name, dict(id=test_1_id))
         test2 = dict(id=test_2_id, val=test1["val"])
-        tx = put(tx, integration_test_id_table.name, test2)
+        tx = put(tx, integration_test_id_table, test2)
         test1["val"] += 2
         tx = put(tx, integration_test_id_table.name, test1)
         tx = delete(tx, integration_test_id_table.name, dict(id=test_3_id))
