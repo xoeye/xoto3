@@ -1,6 +1,6 @@
 import time
 
-from xoto3.dynamodb.write_versioned.transact.retry import timed_retry
+from xoto3.dynamodb.write_versioned.retry import timed_retry
 
 
 def test_timed_retry():

@@ -1,14 +1,14 @@
 import pytest
 
 from xoto3.dynamodb.exceptions import ItemNotFoundException
-from xoto3.dynamodb.write_versioned.transact import delete, get, put, require
-from xoto3.dynamodb.write_versioned.transact.errors import (
+from xoto3.dynamodb.write_versioned import delete, get, put, require
+from xoto3.dynamodb.write_versioned.errors import (
     ItemUnknownToTransactionError,
     TableUnknownToTransactionError,
 )
-from xoto3.dynamodb.write_versioned.transact.keys import hashable_key, key_from_item
-from xoto3.dynamodb.write_versioned.transact.prepare import items_and_keys_to_clean_table_data
-from xoto3.dynamodb.write_versioned.transact.types import VersionedTransaction as VT
+from xoto3.dynamodb.write_versioned.keys import hashable_key, key_from_item
+from xoto3.dynamodb.write_versioned.prepare import items_and_keys_to_clean_table_data
+from xoto3.dynamodb.write_versioned.types import VersionedTransaction as VT
 
 
 def build_items(*items_in, key_attributes=("id",)):

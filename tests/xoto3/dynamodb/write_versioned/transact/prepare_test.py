@@ -1,6 +1,6 @@
 import pytest
 
-from xoto3.dynamodb.write_versioned.transact.prepare import parse_batch_get_request
+from xoto3.dynamodb.write_versioned.prepare import parse_batch_get_request
 
 
 def test_disallow_non_matching_keys():

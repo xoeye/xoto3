@@ -1,6 +1,6 @@
 from botocore.exceptions import ClientError
 
-from xoto3.dynamodb.write_versioned.transact.ddb_api import is_cancelled_and_retryable
+from xoto3.dynamodb.write_versioned.ddb_api import is_cancelled_and_retryable
 
 
 def test_is_cancelled_and_retryable():

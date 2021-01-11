@@ -1,4 +1,4 @@
-from xoto3.dynamodb.write_versioned.transact.keys import hashable_key, hashable_key_to_key
+from xoto3.dynamodb.write_versioned.keys import hashable_key, hashable_key_to_key
 
 
 def test_xf_keys():

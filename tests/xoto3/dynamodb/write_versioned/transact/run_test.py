@@ -3,7 +3,7 @@ from typing import List, cast
 import pytest
 from botocore.exceptions import ClientError
 
-from xoto3.dynamodb.write_versioned.transact import (
+from xoto3.dynamodb.write_versioned import (
     ItemKeysByTableName,
     ItemsByTableName,
     TransactionAttemptsOverrun,
@@ -14,7 +14,7 @@ from xoto3.dynamodb.write_versioned.transact import (
     require,
     versioned_transact_write_items,
 )
-from xoto3.dynamodb.write_versioned.transact.types import BatchGetItem, TransactWriteItems
+from xoto3.dynamodb.write_versioned.types import BatchGetItem, TransactWriteItems
 
 
 def test_no_io_run():
