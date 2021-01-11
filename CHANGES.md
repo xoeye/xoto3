@@ -1,3 +1,10 @@
+## 1.9.0
+
+- New `versioned_transact_write_items` wrapper that presents a general
+  purpose interface for versioned transactional Puts and Deletes
+  across tables and items, reverting to simple versioned writes for
+  cost optimization when only a single item is transacted.
+
 ## 1.8.0
 
 - Improved utilities and types for CloudWatch Metrics.

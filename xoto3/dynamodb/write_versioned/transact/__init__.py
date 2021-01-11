@@ -7,4 +7,9 @@ from .errors import (  # noqa
 from .modify import delete, put  # noqa
 from .read import get, require  # noqa
 from .run import versioned_transact_write_items  # noqa
-from .types import BatchGetItem, TransactWriteItems, VersionedTransaction  # noqa
+from .types import (  # noqa
+    ItemKeysByTableName,
+    ItemsByTableName,
+    TransactWriteItems,
+    VersionedTransaction,
+)

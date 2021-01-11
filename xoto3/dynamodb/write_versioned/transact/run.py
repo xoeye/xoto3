@@ -1,7 +1,7 @@
 """The core run loop for a transaction"""
 from datetime import datetime
 from logging import getLogger
-from typing import Collection, Iterator, Mapping, Optional
+from typing import Callable, Collection, Iterable, Mapping, Optional
 
 from botocore.exceptions import ClientError
 
@@ -31,7 +31,8 @@ def versioned_transact_write_items(
     *,
     batch_get_item: Optional[BatchGetItem] = None,
     transact_write_items: Optional[TransactWriteItems] = None,
-    attempts_iterator: Optional[Iterator] = None,
+    is_retryable: Callable[[ClientError], bool] = is_cancelled_and_retryable,
+    attempts_iterator: Optional[Iterable] = None,
     item_version_attribute: str = "item_version",
     last_written_attribute: str = "last_written_at",
 ) -> VersionedTransaction:
@@ -90,7 +91,7 @@ def versioned_transact_write_items(
             )
             return built_transaction
         except ClientError as ce:
-            if not is_cancelled_and_retryable(ce):
+            if not is_retryable(ce):
                 raise
 
     raise TransactionAttemptsOverrun(f"Failed after {i + 1} attempts")

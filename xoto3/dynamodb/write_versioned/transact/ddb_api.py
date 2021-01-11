@@ -65,6 +65,24 @@ def _ddb_batch_get_item(
     return response["Responses"]
 
 
+def make_transact_multiple_but_optimize_single(ddb_client):
+    def boto3_transact_multiple_but_optimize_single(TransactItems: List[dict], **kwargs) -> Any:
+        if len(TransactItems) == 1 and "ClientRequestToken" not in kwargs:
+            # attempt single put or delete to halve the cost
+            command = TransactItems[0]
+            item_args = tuple(command.values())[0]  # first and only value is a dict of arguments
+            if set(command) == {"Put"}:
+                ddb_client.put_item(**{**item_args, **kwargs})
+                return
+            if set(command) == {"Delete"}:
+                ddb_client.delete_item(**{**item_args, **kwargs})
+                return
+            # we don't (yet) support single writee optimization for things other than Put or Delete
+        ddb_client.transact_write_items(TransactItems=TransactItems, **kwargs),
+
+    return boto3_transact_multiple_but_optimize_single
+
+
 def boto3_impl_defaults(
     batch_get_item: Optional[BatchGetItem] = None,
     transact_write_items: Optional[TransactWriteItems] = None,
@@ -76,7 +94,7 @@ def boto3_impl_defaults(
     assert batch_get_item
 
     if not transact_write_items:
-        transact_write_items = boto3.client("dynamodb").transact_write_items
+        transact_write_items = make_transact_multiple_but_optimize_single(boto3.client("dynamodb"))
     assert transact_write_items
 
     return (
