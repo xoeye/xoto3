@@ -172,3 +172,13 @@ def test_integration_optimize_single_delete(
     versioned_transact_write_items(
         test_delete, {integration_test_id_table.name: [dict(id=test_id),]},
     )
+
+
+def test_no_op_builder():
+    def builder(tx):
+        assert False
+        return tx
+
+    versioned_transact_write_items(
+        builder, dict(table1=[], table2=[]),
+    )

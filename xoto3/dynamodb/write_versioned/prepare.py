@@ -1,4 +1,4 @@
-from typing import Collection, Dict, Iterable, List, Mapping, Sequence, Set, Tuple
+from typing import Collection, Dict, Iterable, List, Mapping, Sequence, Set, Tuple, TypeVar, cast
 
 from xoto3.dynamodb.types import Item, ItemKey, KeyAttributeType
 
@@ -61,17 +61,26 @@ def _extract_key_attributes(item_keys: Sequence[ItemKey]) -> Tuple[str, ...]:
     return tuple(sorted(item_keys[0].keys()))
 
 
+D = TypeVar("D", bound=dict)
+
+
+def _drop_keys_with_empty_values(d: D) -> D:
+    return cast(D, {key: v for key, v in d.items() if v})
+
+
 def prepare_clean_transaction(
     item_keys_by_table_name: Mapping[str, Sequence[ItemKey]],
     response_items_by_table_name: Mapping[str, Sequence[Item]],
 ) -> VersionedTransaction:
     return VersionedTransaction(
-        tables={
-            table_name: items_and_keys_to_clean_table_data(
-                _extract_key_attributes(item_keys),
-                item_keys,
-                response_items_by_table_name[table_name],
-            )
-            for table_name, item_keys in item_keys_by_table_name.items()
-        }
+        tables=_drop_keys_with_empty_values(
+            {
+                table_name: items_and_keys_to_clean_table_data(
+                    _extract_key_attributes(item_keys),
+                    item_keys,
+                    response_items_by_table_name[table_name],
+                )
+                for table_name, item_keys in item_keys_by_table_name.items()
+            }
+        )
     )

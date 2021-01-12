@@ -55,13 +55,14 @@ def versioned_transact_write_items(
     Returns the completed transaction, which contains the resulting
     items as written to the table(s).
 
-    In the future we could add support for more precise
-    ConditionChecks on unwritten items, rather than the present
-    general assertion that their item_version was not changed.
+    In the future we could add support for narrower ConditionChecks on
+    unwritten items, rather than the present general assertion that
+    their `item_version` was not changed.
 
     The default implementation for transact_write_items will also
     attempt to optimize your usage by reverting to a simple Put or
     Delete if you only operate on a single item.
+
     """
     batch_get_item, transact_write_items = boto3_impl_defaults(
         batch_get_item, transact_write_items,
@@ -72,6 +73,8 @@ def versioned_transact_write_items(
             parse_batch_get_request(item_keys_by_table_name),
             batch_get_item(item_keys_by_table_name),
         )
+        if not clean_transaction.tables:
+            return clean_transaction
 
         built_transaction = transaction_builder(clean_transaction)
 
