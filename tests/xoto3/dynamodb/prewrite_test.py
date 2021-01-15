@@ -1,10 +1,10 @@
 from decimal import Decimal
 
-from boto3.dynamodb.types import Binary
 import pytest
+from boto3.dynamodb.types import Binary
 
 from xoto3.dynamodb.prewrite import dynamodb_prewrite
-from xoto3.dynamodb.utils.serde import serialize_item, deserialize_item
+from xoto3.dynamodb.utils.serde import deserialize_item, serialize_item
 
 
 def test_dynamodb_prewrite_still_have_empty_strings_in_lists():
@@ -59,6 +59,8 @@ def test_dynamodb_prewrite():
     for i in range(SPLIT, len(test_dict.keys())):
         assert f"key{i}" not in stripped
 
+    serialize_item(stripped)
+
 
 def test_more_prewrite():
     test_dict = dict(
@@ -73,8 +75,11 @@ def test_more_prewrite():
         k8={1, 2, 3, Decimal("3.1415926535")},  # NS
         k9={Binary(b"123"), Binary(b"456")},  # BS
     )
-    with pytest.raises(TypeError):
-        serialize_item(test_dict)
+
+    # this used to error consistently, but a boto3 upgrade (somewhere around 1.16?) has made it stop erroring.
+    #
+    # with pytest.raises(TypeError):
+    #     serialize_item(test_dict)
 
     out = dynamodb_prewrite(test_dict)
     out_ser = serialize_item(out)  # doesn't raise

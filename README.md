@@ -11,13 +11,18 @@ at XOi Technologies, and represent real production code.
 
 Some of the features included:
 
-- A more general purpose `boto3` paginator.
+- A more general purpose `boto3` client API paginator.
 
 - Higher-level abstractions for DynamoDB, including:
 
-  - a transactional single-item update that allows you to express your update
-    transformation in pure Python
-  - automatic safeguards against various sorts of data that DynamoDB won't accept.
+  - pure data transformation safeguards against various sorts of data
+    that DynamoDB won't accept.
+  - a transactional single-item update that allows you to express your
+    single-item update transformation in pure Python.
+  - an multi-item, multi-table composable, retrying, transaction
+    wrapper for TransactWriteItems, allowing arbitrary writes (up to
+    the built in API limitations) to multiple databases to be
+    expressed as pure Python.
   - transparent BatchGet and BatchWrite utilities that work around the
     many annoyances of `boto3` and DynamoDB itself.
   - composable query interfaces that make writing basic queries against DynamoDB fun.
