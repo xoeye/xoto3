@@ -3,14 +3,14 @@
 
 By default only prints the primary key.
 """
-from typing import Callable
 import argparse
+from typing import Callable
+
 import boto3
 
-from xoto3.dynamodb.streams.records import old_and_new_items_from_stream_event_record
 from xoto3.dynamodb.streams.consume import process_latest_from_stream
+from xoto3.dynamodb.streams.records import old_and_new_items_from_stream_event_record
 from xoto3.dynamodb.utils.index import hash_key_name, range_key_name
-
 
 DDB_RES = boto3.resource("dynamodb")
 
@@ -25,7 +25,7 @@ def make_accept_stream_item_for_table(item_slicer: Callable[[dict], str]):
         elif not new:
             print(f"Deleted item {item_slicer(old)}")
         else:
-            print(f"Updated item {item_slicer(new)}")
+            print(f"Updated item; OLD: {item_slicer(old)} NEW: {item_slicer(new)}")
 
     return accept_stream_item
 
@@ -63,7 +63,11 @@ def main():
         def item_slicer(item: dict):
             return {
                 **key_slicer(item),
-                **{attr_name: item.get(attr_name) for attr_name in args.attribute_names},
+                **{
+                    attr_name: item[attr_name]
+                    for attr_name in args.attribute_names
+                    if attr_name in item
+                },
             }
 
     else:
