@@ -1,3 +1,20 @@
+## 1.10.0
+
+- `versioned_transact_write_items` now allows the transaction builder
+  itself to lazily load items from any table via `get`/`require`,
+  instead of requiring all transacted items to be explicitly declared
+  before the builder is invoked.
+- Experimental support for optimistic creations and deletions as
+  well - if an item being written has not been prefetched, it will be
+  assumed to not exist for the purposes of the condition check in the
+  Put or Delete within the transaction. If that optimism proves
+  invalid, the transaction will be retried after a refetch of the
+  actual item. The limitation is that we need to be able to somehow
+  derive a key for your item, so either you need to have prefetched a
+  different item from the same table, or your environment must allow
+  access to the DescribeTable action for the DynamoDB table, so that
+  we can directly check its key schema.
+
 ## 1.9.0
 
 - New `versioned_transact_write_items` wrapper that presents a general

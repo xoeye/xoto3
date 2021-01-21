@@ -175,10 +175,82 @@ def test_integration_optimize_single_delete(
 
 
 def test_no_op_builder():
+    ran = False
+
     def builder(tx):
-        assert False
+        nonlocal ran
+        ran = True
+        # transaction does actually run even with no items specified,
+        # since lazy loading is now permitted.
         return tx
 
     versioned_transact_write_items(
         builder, dict(table1=[], table2=[]),
     )
+
+    assert ran
+
+
+def test_lazy_loading_reads_and_writes(
+    integration_test_id_table, integration_test_id_table_put, integration_test_id_table_cleaner
+):
+    tname = integration_test_id_table.name
+    test_id_source = "versioned-transact-known-item-read"
+    test_id_lazy = "versioned-transact-lazy-load-read"
+    test_dest_id = "versioned-transact-write-using-lazy-loaded-value"
+
+    integration_test_id_table_put(dict(id=test_id_source, val=10))
+    integration_test_id_table_put(dict(id=test_id_lazy, val=9))
+    integration_test_id_table_cleaner(dict(id=test_dest_id))
+
+    def lazy_op(tx: VersionedTransaction) -> VersionedTransaction:
+        src = require(tx, tname, dict(id=test_id_source))
+        if src["val"] > 5:
+            # the if statement here is just an example of why you might want to lazy-load something.
+            # In our test, this statement always passes because of the fixture data.
+            lazy = require(tx, tname, dict(id=test_id_lazy))
+            print(lazy)
+            dest_item = dict(id=test_dest_id, val=src["val"] + lazy["val"])
+            print(dest_item)
+            return put(tx, tname, dest_item)
+        # this part of the test is just an example of what you might otherwise do.
+        # it's not actually ever going to run in our test.
+        return tx
+
+    # note that we only specify upfront a key for the single item we know we need to prefetch
+    result = versioned_transact_write_items(lazy_op, {tname: [dict(id=test_id_source)]},)
+
+    assert require(result, tname, dict(id=test_dest_id)) == dict(id=test_dest_id, val=19)
+
+
+def test_optimistic_delete_nonexistent(integration_test_id_table):
+    test_id_to_delete = "versioned-transact-opt-delete"
+
+    def opt_delete(tx: VersionedTransaction) -> VersionedTransaction:
+        return delete(tx, integration_test_id_table.name, dict(id=test_id_to_delete))
+
+    res = versioned_transact_write_items(opt_delete, dict())
+
+    assert None is get(res, integration_test_id_table.name, dict(id=test_id_to_delete))
+
+
+def test_optimistic_delete_existing(integration_test_id_table_put, integration_test_id_table):
+    test_id_to_delete = "versioned-transact-opt-delete-existing"
+
+    integration_test_id_table_put(dict(id=test_id_to_delete, val=1984, item_version=4))
+
+    tx_run_count = 0
+
+    def opt_delete(tx: VersionedTransaction) -> VersionedTransaction:
+        nonlocal tx_run_count
+        tx_run_count += 1
+        return delete(tx, integration_test_id_table.name, dict(id=test_id_to_delete))
+
+    res = versioned_transact_write_items(opt_delete, dict())
+
+    assert None is get(res, integration_test_id_table.name, dict(id=test_id_to_delete))
+
+    assert tx_run_count == 2
+    # once for the optimistic attempt, which will fail, and a second
+    # time for the one that succeeds once it knows what the actual
+    # value is.

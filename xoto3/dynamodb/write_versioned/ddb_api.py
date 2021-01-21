@@ -1,6 +1,7 @@
 """Private implementation details for versioned_transact_write_items"""
 from collections import defaultdict
 from functools import partial
+from logging import getLogger
 from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, cast
 
 import boto3
@@ -10,6 +11,7 @@ from typing_extensions import Protocol, TypedDict
 from xoto3.dynamodb.types import Item
 from xoto3.dynamodb.update.versioned import versioned_item_expression
 from xoto3.dynamodb.utils.serde import serialize_item
+from xoto3.dynamodb.utils.table import table_primary_keys
 from xoto3.errors import client_error_name
 
 from .keys import hashable_key_to_key
@@ -21,6 +23,8 @@ from .types import (
     TransactWriteItems,
     VersionedTransaction,
 )
+
+_log = getLogger(__name__)
 
 _RetryableTransactionCancelledErrorCodes = {
     "ConditionalCheckFailed",
@@ -34,6 +38,19 @@ def table_name(table: TableNameOrResource) -> str:
     if not isinstance(table, str):
         return table.name
     return table
+
+
+def known_key_schema(table: TableNameOrResource) -> Tuple[str, ...]:
+    try:
+        if isinstance(table, str):
+            table = boto3.resource("dynamodb").Table(table)
+        assert not isinstance(table, str)
+        # your environment may or may not have permissions to read the key schema of its table.
+        # in general, that is a nice permission to allow if possible.
+        return table_primary_keys(table)
+    except ClientError:
+        _log.warning("Key schema could not be fetched")
+    return tuple()  # unknown!
 
 
 def _collect_codes(resp: dict) -> Set[str]:
@@ -135,9 +152,13 @@ def built_transaction_to_transact_write_items_args(
         def get_existing_item(hashable_key) -> dict:
             return items.get(hashable_key) or dict()
 
-        for item_hashable_key, item in items.items():
+        modified_item_keys = set()
+
+        for item_hashable_key, effect in effects.items():
+            modified_item_keys.add(item_hashable_key)
             expected_version = get_existing_item(item_hashable_key).get(item_version_attribute, 0)
             item_key = hashable_key_to_key(key_attributes, item_hashable_key)
+            item = items.get(item_hashable_key)
             expression_ensuring_unchangedness = _serialize_versioned_expr(
                 versioned_item_expression(
                     expected_version,
@@ -146,18 +167,7 @@ def built_transaction_to_transact_write_items_args(
                 )
             )
             effect = effects.get(item_hashable_key)
-            if item_hashable_key not in effects:
-                # not modified, so we simply assert that it was not changed.
-                transact_items.append(
-                    dict(
-                        ConditionCheck=dict(
-                            TableName=table_name,
-                            Key=serialize_item(dict(item_key)),
-                            **expression_ensuring_unchangedness,
-                        )
-                    )
-                )
-            elif not effect:
+            if not effect:
                 # item is nil, indicating requested delete
                 transact_items.append(
                     dict(
@@ -181,6 +191,21 @@ def built_transaction_to_transact_write_items_args(
                                         item_version_attribute: expected_version + 1,
                                     },
                                 )
+                            ),
+                            **expression_ensuring_unchangedness,
+                        )
+                    )
+                )
+
+        for item_hashable_key, item in items.items():
+            if item_hashable_key not in modified_item_keys:
+                # assert that the required transaction item was not changed.
+                transact_items.append(
+                    dict(
+                        ConditionCheck=dict(
+                            TableName=table_name,
+                            Key=serialize_item(
+                                dict(hashable_key_to_key(key_attributes, item_hashable_key))
                             ),
                             **expression_ensuring_unchangedness,
                         )
