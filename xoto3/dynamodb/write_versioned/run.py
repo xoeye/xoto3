@@ -102,6 +102,7 @@ def versioned_transact_write_items(
         batch_get_item, transact_write_items,
     )
 
+    built_transaction = None
     for i, _ in enumerate(attempts_iterator or timed_retry()):
         clean_transaction, built_transaction = _lazy_loading_transaction_builder(
             transaction_builder, item_keys_by_table_name, batch_get_item,
@@ -130,4 +131,5 @@ def versioned_transact_write_items(
 
         item_keys_by_table_name = all_items_for_next_attempt(built_transaction)
 
-    raise TransactionAttemptsOverrun(f"Failed after {i + 1} attempts")
+    assert built_transaction, "No attempt was made to run the transaction"
+    raise TransactionAttemptsOverrun(f"Failed after {i + 1} attempts", built_transaction)

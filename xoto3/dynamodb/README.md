@@ -84,31 +84,31 @@ user_key = dict(id="bob")
 group_key = dict(pk="team42")
 
 def add_user_to_new_or_existing_group(t: wv.VersionedTransaction) -> wv.VersionedTransaction:
-	user = wv.require(t, "User", user_key)
-	assert user, "require will raise ItemNotFoundException if the item does not exist"
-	group = wv.get(t, "Group", group_key)
+    user = wv.require(t, "User", user_key)
+    assert user, "require will raise ItemNotFoundException if the item does not exist"
+    group = wv.get(t, "Group", group_key)
 
-	if group_key not in user["groups"]:
-		user["groups"].append(group_key)
-		t = wv.put(t, "User", user)
+    if group_key not in user["groups"]:
+        user["groups"].append(group_key)
+        t = wv.put(t, "User", user)
 
-	if group:
-		if user_key not in group["members"]:
-			group["members"].append(user_key)
-	else:
-		group = dict(group_key, members=[user_key])
+    if group:
+        if user_key not in group["members"]:
+            group["members"].append(user_key)
+    else:
+        group = dict(group_key, members=[user_key])
 
-	if group != wv.get(t, "Group", group_key):
-		# if there was a change to the group
-		t = wv.put(t, "Group", group)
-	return t
+    if group != wv.get(t, "Group", group_key):
+        # if there was a change to the group
+        t = wv.put(t, "Group", group)
+    return t
 
 wv.versioned_transact_write_items(
-	add_user_to_new_or_existing_group,
-	{
-		"User": [user_key],
-		"Group": [group_key],
-	},
+    add_user_to_new_or_existing_group,
+    {
+        "User": [user_key],
+        "Group": [group_key],
+    },
 )
 ```
 
