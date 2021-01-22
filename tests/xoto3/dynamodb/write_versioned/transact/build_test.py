@@ -2,10 +2,7 @@ import pytest
 
 from xoto3.dynamodb.exceptions import ItemNotFoundException
 from xoto3.dynamodb.write_versioned import delete, get, put, require
-from xoto3.dynamodb.write_versioned.errors import (
-    ItemUnknownToTransactionError,
-    TableUnknownToTransactionError,
-)
+from xoto3.dynamodb.write_versioned.errors import ItemNotYetFetchedError, TableSchemaUnknownError
 from xoto3.dynamodb.write_versioned.keys import hashable_key, key_from_item
 from xoto3.dynamodb.write_versioned.prepare import items_and_keys_to_clean_table_data
 from xoto3.dynamodb.write_versioned.types import VersionedTransaction as VT
@@ -37,10 +34,10 @@ def test_get_and_require():
     with pytest.raises(ItemNotFoundException):
         require(vt, "table1", dict(id="no"))
 
-    with pytest.raises(TableUnknownToTransactionError):
+    with pytest.raises(ItemNotYetFetchedError):
         get(vt, "table2", dict(id="1"),) == dict(id="1", val="a")
 
-    with pytest.raises(ItemUnknownToTransactionError):
+    with pytest.raises(ItemNotYetFetchedError):
         get(vt, "table1", dict(id="3"))
 
 
@@ -54,11 +51,11 @@ def test_puts_and_deletes():
         )
     )
 
-    with pytest.raises(TableUnknownToTransactionError):
+    with pytest.raises(TableSchemaUnknownError):
         put(vt, "table3", dict(id="seven", val="whatever"))
 
-    with pytest.raises(ItemUnknownToTransactionError):
-        put(vt, "table1", dict(id="b", val="hey"))
+    put(vt, "table1", dict(id="b", val="hey"))
+    # we know the table schema for this one, so we optimistically allow the put
 
     out_vt = put(vt, "table1", dict(id="a", val=3))
     assert get(out_vt, "table1", dict(id="a")) == dict(id="a", val=3)

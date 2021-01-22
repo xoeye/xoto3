@@ -2,8 +2,8 @@ from typing import Collection, Dict, Iterable, List, Mapping, Sequence, Set, Tup
 
 from xoto3.dynamodb.types import Item, ItemKey, KeyAttributeType
 
-from .keys import hashable_key, key_from_item
-from .types import VersionedTransaction, _TableData
+from .keys import hashable_key, hashable_key_to_key, key_from_item
+from .types import HashableItemKey, VersionedTransaction, _TableData
 
 
 def _deduplicate_and_validate_keys(keys: Collection[ItemKey]) -> Iterable[ItemKey]:
@@ -56,9 +56,13 @@ def items_and_keys_to_clean_table_data(
     )
 
 
+def standard_key_attributes_from_key(item_key: ItemKey) -> Tuple[str, ...]:
+    return tuple(sorted(item_key.keys()))
+
+
 def _extract_key_attributes(item_keys: Sequence[ItemKey]) -> Tuple[str, ...]:
     assert item_keys, "You can't extract key_attributes without at least one item_key."
-    return tuple(sorted(item_keys[0].keys()))
+    return standard_key_attributes_from_key(item_keys[0])
 
 
 D = TypeVar("D", bound=dict)
@@ -84,3 +88,38 @@ def prepare_clean_transaction(
             }
         )
     )
+
+
+def add_item_to_base_request(
+    table_name_onto_item_keys: Mapping[str, Collection[ItemKey]],
+    table_name_and_item_key: Tuple[str, ItemKey],
+) -> Mapping[str, Collection[ItemKey]]:
+    table_name, item_key = table_name_and_item_key
+    if table_name not in table_name_onto_item_keys:
+        return {**table_name_onto_item_keys, table_name: [item_key]}
+    return {
+        **table_name_onto_item_keys,
+        table_name: list(table_name_onto_item_keys[table_name]) + [item_key],
+    }
+
+
+def all_items_for_next_attempt(
+    failed_transaction: VersionedTransaction,
+) -> Dict[str, List[ItemKey]]:
+
+    table_name_onto_hashable_keys: Dict[str, Set[HashableItemKey]] = {
+        table_name: set() for table_name in failed_transaction.tables
+    }
+    for (table_name, table_data,) in failed_transaction.tables.items():
+        items, effects, key_attributes = table_data
+        for hashable_item_key in items.keys():
+            table_name_onto_hashable_keys[table_name].add(hashable_item_key)
+        for hashable_item_key in effects.keys():
+            table_name_onto_hashable_keys[table_name].add(hashable_item_key)
+
+    return {
+        table_name: [
+            hashable_key_to_key(key_attributes, hashable_key) for hashable_key in hashable_keys
+        ]
+        for table_name, hashable_keys in table_name_onto_hashable_keys.items()
+    }

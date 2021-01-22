@@ -1,7 +1,7 @@
 """The core run loop for a transaction"""
 from datetime import datetime
 from logging import getLogger
-from typing import Callable, Collection, Iterable, Mapping, Optional
+from typing import Callable, Collection, Iterable, Mapping, Optional, Tuple
 
 from botocore.exceptions import ClientError
 
@@ -13,8 +13,13 @@ from .ddb_api import (
     built_transaction_to_transact_write_items_args,
     is_cancelled_and_retryable,
 )
-from .errors import TransactionAttemptsOverrun
-from .prepare import parse_batch_get_request, prepare_clean_transaction
+from .errors import ItemNotYetFetchedError, TransactionAttemptsOverrun
+from .prepare import (
+    add_item_to_base_request,
+    all_items_for_next_attempt,
+    parse_batch_get_request,
+    prepare_clean_transaction,
+)
 from .retry import timed_retry
 from .types import BatchGetItem, TransactionBuilder, TransactWriteItems, VersionedTransaction
 
@@ -25,9 +30,38 @@ def _is_empty(transaction: VersionedTransaction) -> bool:
     return not sum(len(effects) for _, effects, *_ in transaction.tables.values())
 
 
-def versioned_transact_write_items(
+def _lazy_loading_transaction_builder(
     transaction_builder: TransactionBuilder,
     item_keys_by_table_name: Mapping[str, Collection[ItemKey]],
+    batch_get_item: BatchGetItem,
+) -> Tuple[VersionedTransaction, VersionedTransaction]:
+    """If your transaction attempts to get/require an item that was not
+    prefetched, we will stop, fetch it, and then retry your
+    transaction from the beginning.
+
+    Remember to make your transaction a pure function, or at least make
+    sure all of its side effects are effectively idempotent!
+    """
+    while True:
+        item_keys_by_table_name = parse_batch_get_request(item_keys_by_table_name)
+        clean_transaction = prepare_clean_transaction(
+            item_keys_by_table_name, batch_get_item(item_keys_by_table_name),
+        )
+        try:
+            built_transaction = transaction_builder(clean_transaction)
+            # the built transaction will always contain a superset of the keys
+            # present in the clean transaction.
+            return clean_transaction, built_transaction
+        except ItemNotYetFetchedError as item_error:
+            assert item_error.key
+            item_keys_by_table_name = add_item_to_base_request(
+                item_keys_by_table_name, (item_error.table_name, item_error.key),
+            )
+
+
+def versioned_transact_write_items(
+    transaction_builder: TransactionBuilder,
+    item_keys_by_table_name: Mapping[str, Collection[ItemKey]] = dict(),
     *,
     batch_get_item: Optional[BatchGetItem] = None,
     transact_write_items: Optional[TransactWriteItems] = None,
@@ -68,16 +102,11 @@ def versioned_transact_write_items(
         batch_get_item, transact_write_items,
     )
 
+    built_transaction = None
     for i, _ in enumerate(attempts_iterator or timed_retry()):
-        clean_transaction = prepare_clean_transaction(
-            parse_batch_get_request(item_keys_by_table_name),
-            batch_get_item(item_keys_by_table_name),
+        clean_transaction, built_transaction = _lazy_loading_transaction_builder(
+            transaction_builder, item_keys_by_table_name, batch_get_item,
         )
-        if not clean_transaction.tables:
-            return clean_transaction
-
-        built_transaction = transaction_builder(clean_transaction)
-
         if built_transaction is clean_transaction or _is_empty(built_transaction):
             logger.info("No effects were defined, so the existing items will be returned as-is.")
             return clean_transaction
@@ -94,7 +123,13 @@ def versioned_transact_write_items(
             )
             return built_transaction
         except ClientError as ce:
+            # TODO in the future, have is_retryable determine which
+            # specific items need to be refetched.  this would save us
+            # some fetches in the general case.
             if not is_retryable(ce):
                 raise
 
-    raise TransactionAttemptsOverrun(f"Failed after {i + 1} attempts")
+        item_keys_by_table_name = all_items_for_next_attempt(built_transaction)
+
+    assert built_transaction, "No attempt was made to run the transaction"
+    raise TransactionAttemptsOverrun(f"Failed after {i + 1} attempts", built_transaction)
