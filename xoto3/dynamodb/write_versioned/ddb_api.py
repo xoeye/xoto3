@@ -17,6 +17,7 @@ from xoto3.errors import client_error_name
 from .keys import hashable_key_to_key
 from .types import (
     BatchGetItem,
+    HashableItemKey,
     ItemKeysByTableName,
     ItemsByTableName,
     TableNameOrResource,
@@ -77,7 +78,6 @@ class Boto3BatchGetItem(Protocol):
 def _ddb_batch_get_item(
     batch_get_item: Boto3BatchGetItem, item_keys_by_table_name: ItemKeysByTableName,
 ) -> ItemsByTableName:
-    # todo handle loop
     unprocessed_keys = {
         table_name: dict(Keys=item_keys, ConsistentRead=True)
         for table_name, item_keys in item_keys_by_table_name.items()
@@ -105,7 +105,7 @@ def make_transact_multiple_but_optimize_single(ddb_client):
                 ddb_client.delete_item(**{**item_args, **kwargs})
                 return
             # we don't (yet) support single writee optimization for things other than Put or Delete
-        ddb_client.transact_write_items(TransactItems=TransactItems, **kwargs),
+        ddb_client.transact_write_items(TransactItems=TransactItems, **kwargs)
 
     return boto3_transact_multiple_but_optimize_single
 
@@ -152,65 +152,82 @@ def built_transaction_to_transact_write_items_args(
         def get_existing_item(hashable_key) -> dict:
             return items.get(hashable_key) or dict()
 
-        modified_item_keys = set()
+        keys_of_items_to_be_modified = set()
 
-        for item_hashable_key, effect in effects.items():
-            modified_item_keys.add(item_hashable_key)
-            expected_version = get_existing_item(item_hashable_key).get(item_version_attribute, 0)
-            item_key = hashable_key_to_key(key_attributes, item_hashable_key)
-            item = items.get(item_hashable_key)
-            expression_ensuring_unchangedness = _serialize_versioned_expr(
+        def put_or_delete_item(item_hashable_key: HashableItemKey, effect: Optional[Item]) -> dict:
+            keys_of_items_to_be_modified.add(item_hashable_key)
+            item = get_existing_item(item_hashable_key)
+            expected_version = item.get(item_version_attribute, 0)
+            expression_ensuring_unmodifiedness = _serialize_versioned_expr(
                 versioned_item_expression(
                     expected_version,
                     item_version_key=item_version_attribute,
                     id_that_exists=key_attributes[0] if item else "",
                 )
             )
-            effect = effects.get(item_hashable_key)
-            if not effect:
+            if effect is None:
                 # item is nil, indicating requested delete
-                transact_items.append(
-                    dict(
-                        Delete=dict(
-                            TableName=table_name,
-                            Key=serialize_item(dict(item_key)),
-                            **expression_ensuring_unchangedness,
-                        )
-                    )
-                )
-            else:
-                transact_items.append(
-                    dict(
-                        Put=dict(
-                            TableName=table_name,
-                            Item=serialize_item(
-                                dict(
-                                    effect,
-                                    **{
-                                        last_written_attribute: last_written_at_str,
-                                        item_version_attribute: expected_version + 1,
-                                    },
-                                )
-                            ),
-                            **expression_ensuring_unchangedness,
-                        )
+                return dict(
+                    Delete=dict(
+                        TableName=table_name,
+                        Key=serialize_item(
+                            dict(hashable_key_to_key(key_attributes, item_hashable_key))
+                        ),
+                        **expression_ensuring_unmodifiedness,
                     )
                 )
 
-        for item_hashable_key, item in items.items():
-            if item_hashable_key not in modified_item_keys:
-                # assert that the required transaction item was not changed.
-                transact_items.append(
-                    dict(
-                        ConditionCheck=dict(
-                            TableName=table_name,
-                            Key=serialize_item(
-                                dict(hashable_key_to_key(key_attributes, item_hashable_key))
-                            ),
-                            **expression_ensuring_unchangedness,
+            # put
+            return dict(
+                Put=dict(
+                    TableName=table_name,
+                    Item=serialize_item(
+                        dict(
+                            effect,
+                            **{
+                                last_written_attribute: last_written_at_str,
+                                item_version_attribute: expected_version + 1,
+                            },
                         )
-                    )
+                    ),
+                    **expression_ensuring_unmodifiedness,
                 )
+            )
+
+        transact_items.extend(
+            [
+                put_or_delete_item(item_hashable_key, effect)
+                for item_hashable_key, effect in effects.items()
+            ]
+        )
+
+        def item_remains_unmodified(
+            item_hashable_key: HashableItemKey, item: Optional[Item]
+        ) -> dict:
+            expression_ensuring_unmodifiedness = _serialize_versioned_expr(
+                versioned_item_expression(
+                    get_existing_item(item_hashable_key).get(item_version_attribute, 0),
+                    item_version_key=item_version_attribute,
+                    id_that_exists=key_attributes[0] if item else "",
+                )
+            )
+            return dict(
+                ConditionCheck=dict(
+                    TableName=table_name,
+                    Key=serialize_item(
+                        dict(hashable_key_to_key(key_attributes, item_hashable_key))
+                    ),
+                    **expression_ensuring_unmodifiedness,
+                )
+            )
+
+        transact_items.extend(
+            [
+                item_remains_unmodified(item_hashable_key, item)
+                for item_hashable_key, item in items.items()
+                if item_hashable_key not in keys_of_items_to_be_modified
+            ]
+        )
 
     args["TransactItems"] = transact_items
     return args

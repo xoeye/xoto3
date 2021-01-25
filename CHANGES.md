@@ -1,3 +1,9 @@
+### 1.10.1
+
+- Fixed bug in `versioned_transact_write_items` where un-effected
+  items would have an incorrect ConditionExpression generated, causing
+  the transaction to fail.
+
 ## 1.10.0
 
 - `versioned_transact_write_items` now allows the transaction builder

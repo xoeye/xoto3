@@ -254,3 +254,21 @@ def test_optimistic_delete_existing(integration_test_id_table_put, integration_t
     # once for the optimistic attempt, which will fail, and a second
     # time for the one that succeeds once it knows what the actual
     # value is.
+
+
+def test_assert_unchanged(integration_test_id_table_put, integration_test_id_table):
+    test_id_to_put = "versioned-transact-put-from-unchanged"
+    test_id_to_assert = "versioned-transact-assert-unchanged"
+
+    integration_test_id_table_put(dict(id=test_id_to_assert, val=9))
+
+    def put_after_get(tx):
+        a = require(tx, integration_test_id_table.name, dict(id=test_id_to_assert))
+        return put(tx, integration_test_id_table.name, dict(id=test_id_to_put, val=a["val"]))
+
+    res = versioned_transact_write_items(
+        put_after_get,
+        {integration_test_id_table.name: [dict(id=test_id_to_put), dict(id=test_id_to_assert)]},
+    )
+
+    assert 9 == require(res, integration_test_id_table.name, dict(id=test_id_to_put))["val"]

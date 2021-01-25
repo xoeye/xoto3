@@ -128,6 +128,7 @@ def versioned_transact_write_items(
             # some fetches in the general case.
             if not is_retryable(ce):
                 raise
+            logger.warning(f"Retrying attempt {i} that failed with {ce.response}")
 
         item_keys_by_table_name = all_items_for_next_attempt(built_transaction)
 
