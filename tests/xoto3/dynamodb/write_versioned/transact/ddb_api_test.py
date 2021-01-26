@@ -87,3 +87,27 @@ def test_built_transaction_includes_unmodified():
             },
         ]
     } == args
+
+
+def test_built_transaction_accepts_table_name_map():
+
+    tx = VersionedTransaction(
+        tables=dict(
+            Common=items_and_keys_to_clean_table_data(
+                ("id",), [dict(id="unmodified")], [dict(id="delete", val=4)]
+            )
+        )
+    )
+    tx = delete(tx, "Common", dict(id="delete"))
+
+    args = built_transaction_to_transact_write_items_args(
+        tx, "adatetimestring", table_name_map=dict(Common="VisionCommon.testing.dynamo.table.v00")
+    )
+
+    assert (
+        args["TransactItems"][0]["Delete"]["TableName"] == "VisionCommon.testing.dynamo.table.v00"
+    )
+    assert (
+        args["TransactItems"][1]["ConditionCheck"]["TableName"]
+        == "VisionCommon.testing.dynamo.table.v00"
+    )

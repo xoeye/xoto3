@@ -1,3 +1,9 @@
+### 1.11.0
+
+- Allow a table_name_map to be passed in so that knowledge of the actual
+  table name being acted upon can remain in only the imperative shell of
+  an application using versioned_transact_write_items.
+
 ### 1.10.1
 
 - Fixed bug in `versioned_transact_write_items` where un-effected

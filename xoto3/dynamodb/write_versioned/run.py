@@ -62,6 +62,7 @@ def _lazy_loading_transaction_builder(
 def versioned_transact_write_items(
     transaction_builder: TransactionBuilder,
     item_keys_by_table_name: Mapping[str, Collection[ItemKey]] = dict(),
+    table_name_map: Mapping[str, str] = dict(),
     *,
     batch_get_item: Optional[BatchGetItem] = None,
     transact_write_items: Optional[TransactWriteItems] = None,
@@ -119,6 +120,7 @@ def versioned_transact_write_items(
                     "",
                     item_version_attribute,
                     last_written_attribute,
+                    table_name_map,
                 )
             )
             return built_transaction

@@ -204,23 +204,25 @@ def test_lazy_loading_reads_and_writes(
     integration_test_id_table_cleaner(dict(id=test_dest_id))
 
     def lazy_op(tx: VersionedTransaction) -> VersionedTransaction:
-        src = require(tx, tname, dict(id=test_id_source))
+        src = require(tx, "TEST", dict(id=test_id_source))
         if src["val"] > 5:
             # the if statement here is just an example of why you might want to lazy-load something.
             # In our test, this statement always passes because of the fixture data.
-            lazy = require(tx, tname, dict(id=test_id_lazy))
+            lazy = require(tx, "TEST", dict(id=test_id_lazy))
             print(lazy)
             dest_item = dict(id=test_dest_id, val=src["val"] + lazy["val"])
             print(dest_item)
-            return put(tx, tname, dest_item)
+            return put(tx, "TEST", dest_item)
         # this part of the test is just an example of what you might otherwise do.
         # it's not actually ever going to run in our test.
         return tx
 
     # note that we only specify upfront a key for the single item we know we need to prefetch
-    result = versioned_transact_write_items(lazy_op, {tname: [dict(id=test_id_source)]},)
+    result = versioned_transact_write_items(
+        lazy_op, dict(TEST=[dict(id=test_id_source)]), dict(TEST=tname)
+    )
 
-    assert require(result, tname, dict(id=test_dest_id)) == dict(id=test_dest_id, val=19)
+    assert require(result, "TEST", dict(id=test_dest_id)) == dict(id=test_dest_id, val=19)
 
 
 def test_optimistic_delete_nonexistent(integration_test_id_table):

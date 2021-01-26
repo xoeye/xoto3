@@ -140,6 +140,7 @@ def built_transaction_to_transact_write_items_args(
     ClientRequestToken: str = "",
     item_version_attribute: str = "item_version",
     last_written_attribute: str = "last_written_at",
+    table_name_map: Mapping[str, str] = dict(),
 ) -> dict:
 
     args: Dict[str, Any] = dict(ClientRequestToken=ClientRequestToken)
@@ -147,6 +148,7 @@ def built_transaction_to_transact_write_items_args(
         args.pop("ClientRequestToken")
     transact_items = list()
     for table_name, tbl_data in transaction.tables.items():
+        table_name = table_name_map.get(table_name, table_name)
         items, effects, key_attributes = tbl_data
 
         def get_existing_item(hashable_key) -> dict:
