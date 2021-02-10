@@ -104,7 +104,7 @@ def make_transact_multiple_but_optimize_single(ddb_client):
             if set(command) == {"Delete"}:
                 ddb_client.delete_item(**{**item_args, **kwargs})
                 return
-            # we don't (yet) support single writee optimization for things other than Put or Delete
+            # we don't support single write optimization for things other than Put or Delete
         ddb_client.transact_write_items(TransactItems=TransactItems, **kwargs)
 
     return boto3_transact_multiple_but_optimize_single

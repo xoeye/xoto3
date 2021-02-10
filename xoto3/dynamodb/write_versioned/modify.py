@@ -1,6 +1,6 @@
 """Defines the API for modifying an existing transaction. """
 
-from typing import NamedTuple, Optional, Union
+from typing import Mapping, NamedTuple, Optional, Union
 
 from xoto3.dynamodb.constants import DEFAULT_ITEM_NAME
 from xoto3.dynamodb.prewrite import dynamodb_prewrite
@@ -12,7 +12,7 @@ from .ddb_api import table_name as _table_name
 from .errors import TableSchemaUnknownError
 from .keys import hashable_key, key_from_item
 from .prepare import standard_key_attributes_from_key
-from .types import TableNameOrResource, VersionedTransaction, _TableData
+from .types import HashableItemKey, TableNameOrResource, VersionedTransaction, _TableData
 
 
 class Put(NamedTuple):
@@ -24,6 +24,19 @@ class Delete(NamedTuple):
 
 
 PutOrDelete = Union[Put, Delete]
+
+
+def _drop_noop_puts(
+    items: Mapping[HashableItemKey, Optional[Item]],
+    effects: Mapping[HashableItemKey, Union[Item, None]],
+    new_puts: Mapping[HashableItemKey, Item],
+) -> Mapping[HashableItemKey, Union[Item, None]]:
+    current = {**items, **effects}
+    return {
+        item_key: item_value
+        for item_key, item_value in new_puts.items()
+        if item_value != current.get(item_key)
+    }
 
 
 def _write(
@@ -59,7 +72,7 @@ def _write(
                 if len(put_or_delete.item_key) > 2:
                     raise TableSchemaUnknownError(
                         f"We don't know the key schema for {table_name} because you haven't defined it "
-                        "and it is not guessable from the delete you requested."
+                        "and it is not guessable from the delete you requested. "
                         "Specify this delete in terms of the key only and this should work fine."
                     )
                 # at this point this is a best guess
@@ -72,21 +85,23 @@ def _write(
                     "Prefetching this item by key would solve that problem."
                 )
 
-    item_or_none, item_key = (
-        (put_or_delete.item, key_from_item(key_attributes, put_or_delete.item))
+    effect = (
+        _drop_noop_puts(
+            items,
+            effects,
+            {hashable_key(key_from_item(key_attributes, put_or_delete.item)): put_or_delete.item},
+        )
         if isinstance(put_or_delete, Put)
-        else (None, key_from_item(key_attributes, put_or_delete.item_key))
+        else {hashable_key(key_from_item(key_attributes, put_or_delete.item_key)): None}
     )
-
-    hashable_item_key = hashable_key(item_key)
+    if not effect:
+        return transaction
 
     return VersionedTransaction(
         tables={
             **transaction.tables,
             table_name: _TableData(
-                items=items,
-                effects={**effects, hashable_item_key: item_or_none},
-                key_attributes=key_attributes,
+                items=items, effects={**effects, **effect}, key_attributes=key_attributes,
             ),
         }
     )

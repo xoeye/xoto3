@@ -1,3 +1,8 @@
+## 1.11.0
+
+- `versioned_transact_write_items` optimizes away puts of items where
+  the input item is `==` to the existing item.
+
 ### 1.10.1
 
 - Fixed bug in `versioned_transact_write_items` where un-effected
