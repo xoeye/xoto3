@@ -1,0 +1,14 @@
+tests:
+  - tests/**/*
+
+core:
+  - xoto3/**/*
+
+dependencies:
+  - Pipfile*
+
+internal:
+  - ./CHANGES.md
+
+documentation:
+  - ./README.md
