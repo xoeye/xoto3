@@ -17,12 +17,12 @@ Some of the features included:
 
   - pure data transformation safeguards against various sorts of data
     that DynamoDB won't accept.
-  - a transactional single-item update that allows you to express your
-    single-item update transformation in pure Python.
   - an multi-item, multi-table composable, retrying, transaction
     wrapper for TransactWriteItems, allowing arbitrary writes (up to
     the built in API limitations) to multiple databases to be
     expressed as pure Python.
+  - a transactional single-item update that allows you to express your
+    single-item update transformation in pure Python.
   - transparent BatchGet and BatchWrite utilities that work around the
     many annoyances of `boto3` and DynamoDB itself.
   - composable query interfaces that make writing basic queries against DynamoDB fun.
