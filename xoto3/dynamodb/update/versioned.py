@@ -22,7 +22,10 @@ from xoto3.dynamodb.get import (
     strongly_consistent_get_item_if_exists,
 )
 from xoto3.dynamodb.types import AttrDict, Item, ItemKey, TableResource
-from xoto3.errors import client_error_name
+from xoto3.dynamodb.write_versioned.ddb_api import (
+    is_cancelled_and_retryable,
+    versioned_item_expression,
+)
 from xoto3.utils.dt import iso8601strict
 from xoto3.utils.tree_map import SimpleTransform
 
@@ -157,7 +160,7 @@ def versioned_diffed_update_item(
             update_item(table, item_key, **update_arguments, **expr)
             return updated_item
         except ClientError as ce:
-            if client_error_name(ce) == "ConditionalCheckFailedException":
+            if is_cancelled_and_retryable(ce):
                 msg = (
                     "Attempt %d to update %s in table %s was beaten "
                     + "by a different update. Sleeping for %s seconds."
@@ -184,36 +187,6 @@ def versioned_diffed_update_item(
         key=item_key,
         table_name=table.name,
         update_arguments=update_arguments,
-    )
-
-
-# this could be used in a put_item scenario as well, or even with a batch_writer
-def versioned_item_expression(
-    item_version: int, item_version_key: str = "item_version", id_that_exists: str = ""
-) -> dict:
-    """Assembles a DynamoDB ConditionExpression with ExprAttrNames and
-    Values that will ensure that you are the only caller of
-    versioned_item_diffed_update that has updated this item.
-
-    In general it would be a silly thing to not pass id_that_exists if
-    your item_version is not also 0.  However, since this is just a
-    helper function and is only used (currently) by the local consumer
-    versioned_item_diffed_update, there is no need to enforce this.
-
-    """
-    expr_names = {"#itemVersion": item_version_key}
-    expr_vals = {":curItemVersion": item_version}
-    item_version_condition = "#itemVersion = :curItemVersion"
-    first_time_version_condition = "attribute_not_exists(#itemVersion)"
-    if id_that_exists:
-        expr_names["#idThatExists"] = id_that_exists
-        first_time_version_condition = (
-            f"( {first_time_version_condition} AND attribute_exists(#idThatExists) )"
-        )
-    return dict(
-        ExpressionAttributeNames=expr_names,
-        ExpressionAttributeValues=expr_vals,
-        ConditionExpression=item_version_condition + " OR " + first_time_version_condition,
     )
 
 

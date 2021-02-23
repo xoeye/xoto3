@@ -1,3 +1,8 @@
+### 1.10.2
+
+- Fixed `versioned_diffed_update_item` to support concurrent use with
+  transactions.
+
 ### 1.10.1
 
 - Fixed bug in `versioned_transact_write_items` where un-effected

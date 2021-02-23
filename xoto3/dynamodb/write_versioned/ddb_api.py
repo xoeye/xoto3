@@ -9,7 +9,6 @@ from botocore.exceptions import ClientError
 from typing_extensions import Protocol, TypedDict
 
 from xoto3.dynamodb.types import Item
-from xoto3.dynamodb.update.versioned import versioned_item_expression
 from xoto3.dynamodb.utils.serde import serialize_item
 from xoto3.dynamodb.utils.table import table_primary_keys
 from xoto3.errors import client_error_name
@@ -132,6 +131,36 @@ def boto3_impl_defaults(
 
 def _serialize_versioned_expr(expr: dict) -> dict:
     return dict(expr, ExpressionAttributeValues=serialize_item(expr["ExpressionAttributeValues"]))
+
+
+# this could be used in a put_item scenario as well, or even with a batch_writer
+def versioned_item_expression(
+    item_version: int, item_version_key: str = "item_version", id_that_exists: str = ""
+) -> dict:
+    """Assembles a DynamoDB ConditionExpression with ExprAttrNames and
+    Values that will ensure that you are the only caller of
+    versioned_item_diffed_update that has updated this item.
+
+    In general it would be a silly thing to not pass id_that_exists if
+    your item_version is not also 0.  However, since this is just a
+    helper function and is only used (currently) by the local consumer
+    versioned_item_diffed_update, there is no need to enforce this.
+
+    """
+    expr_names = {"#itemVersion": item_version_key}
+    expr_vals = {":curItemVersion": item_version}
+    item_version_condition = "#itemVersion = :curItemVersion"
+    first_time_version_condition = "attribute_not_exists(#itemVersion)"
+    if id_that_exists:
+        expr_names["#idThatExists"] = id_that_exists
+        first_time_version_condition = (
+            f"( {first_time_version_condition} AND attribute_exists(#idThatExists) )"
+        )
+    return dict(
+        ExpressionAttributeNames=expr_names,
+        ExpressionAttributeValues=expr_vals,
+        ConditionExpression=item_version_condition + " OR " + first_time_version_condition,
+    )
 
 
 def built_transaction_to_transact_write_items_args(
