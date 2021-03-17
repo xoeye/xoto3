@@ -1,8 +1,8 @@
 """Basic types for DynamoDB data and operations"""
 import typing as ty
 from decimal import Decimal
-from typing_extensions import TypedDict, Literal
 
+from typing_extensions import Literal, TypedDict
 
 KeyAttributeType = ty.Union[int, str, float, Decimal]
 ItemKey = ty.Mapping[str, KeyAttributeType]
@@ -11,11 +11,12 @@ AttrInput = ty.Mapping[str, ty.Any]
 InputItem = AttrInput
 
 SchemaKeyAttibute = TypedDict("SchemaKeyAttibute", {"AttributeName": str})
+KeyType = ty.Union[Literal["HASH"], Literal["RANGE"]]
 
 
 class KeyAndType(TypedDict):
     AttributeName: str
-    KeyType: ty.Union[Literal["HASH"], Literal["RANGE"]]
+    KeyType: KeyType
 
 
 KeySchema = ty.List[KeyAndType]

@@ -66,3 +66,20 @@ setting an environment variable that is the name of a DynamoDB table
 with a primary key that is a partition key of `id` and no range
 key. The name of the environment variable to be set is
 `XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME`.
+
+## Development
+
+### Writing tests
+
+Any new changes should be accompanied by unit tests. Integration tests
+should also be included where they are helpful.
+
+Integration tests should make use of environment variables and pytest's
+ability to skip a test in the event that an environment variable is not set.
+
+Additionally, pytest is configured to run all tests in parallel, so any
+integration test you write must be independent of any other test, and must not
+leave behind test data.
+
+Your integration tests should be written alongside the unit tests. We do not keep
+them in a separate folder.

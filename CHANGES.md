@@ -1,3 +1,7 @@
+### 1.11.0
+
+- Update `find_index` and `require_index` to allow for an index with no range key.
+
 ### 1.10.2
 
 - Fixed `versioned_diffed_update_item` to support concurrent use with

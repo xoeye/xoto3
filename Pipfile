@@ -11,8 +11,9 @@ typing-extensions = "*"
 [dev-packages]
 pytest = "~=5.0"
 mypy = ">=0.790"
-pylint = "*"
+pylint = "~=2.7"
 pytest-cov = "*"
+pytest-xdist = "~=1.34"
 
 [requires]
 python_version = "3.7"
