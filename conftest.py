@@ -58,6 +58,9 @@ def make_table_putter(
 XOTO3_INTEGRATION_TEST_ID_TABLE_NAME = os.environ.get(
     "XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME"
 )
+XOTO3_INTEGRATION_TEST_NO_RANGE_KEY_INDEX_HASH_KEY = os.environ.get(
+    "XOTO3_INTEGRATION_TEST_NO_RANGE_KEY_INDEX_HASH_KEY"
+)
 
 
 def get_integration_test_id_table():
@@ -72,6 +75,12 @@ def get_integration_test_id_table():
 integration_test_id_table_put = pytest.fixture(make_table_putter(get_integration_test_id_table))
 
 
+def get_integration_test_no_range_key_index_hash_key():
+    if not XOTO3_INTEGRATION_TEST_NO_RANGE_KEY_INDEX_HASH_KEY:
+        pytest.skip("No integration test hash key was defined")
+    return XOTO3_INTEGRATION_TEST_NO_RANGE_KEY_INDEX_HASH_KEY
+
+
 @pytest.fixture
 def integration_test_id_table_cleaner():
     table_cleaner = make_table_cleaner(get_integration_test_id_table)
@@ -80,3 +89,6 @@ def integration_test_id_table_cleaner():
 
 
 integration_test_id_table = pytest.fixture("module")(get_integration_test_id_table)
+integration_test_no_range_index_hash_key = pytest.fixture("module")(
+    get_integration_test_no_range_key_index_hash_key
+)
