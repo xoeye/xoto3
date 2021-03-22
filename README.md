@@ -62,10 +62,13 @@ Some highlights:
 You can run all unit tests with `pipenv run pytest tests`.
 
 You can additionally include all the DynamoDB integration tests by
-setting an environment variable that is the name of a DynamoDB table
-with a primary key that is a partition key of `id` and no range
-key. The name of the environment variable to be set is
-`XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME`.
+setting some environment variables:
+
+`XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME`: the name of a
+DynamoDB table with a primary key that is a partition key of `id`
+and no range key.
+`XOTO3_INTEGRATION_TEST_NO_RANGE_KEY_INDEX_HASH_KEY`: the name of an
+attribute which is the partition key of a GSI with no range key.
 
 ## Development
 
