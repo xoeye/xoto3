@@ -1,4 +1,4 @@
-from xoto3.dynamodb.conditions import item_exists, item_not_exists, _range_str
+from xoto3.dynamodb.conditions import _range_str, item_exists, item_not_exists
 
 
 def test_item_exists():

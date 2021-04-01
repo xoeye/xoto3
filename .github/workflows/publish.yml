@@ -1,0 +1,58 @@
+name: Publish
+
+# RELEASE PROCESS
+#
+# === Manual ===
+#
+# 1. Document human readable changes in CHANGES
+# 2. Bump package version
+# 3. Create a PR to develop branch
+# 4. Edit the current draft release notes
+# 5. If not already set, use `v<new version>` as a tag, and select develop as target branch
+#
+# === Automated ===
+#
+# 1. Extract release notes name that was published
+# 2. Ensure release notes name match what's in CHANGES
+# 5. Publish package to PyPi
+# 6. Push latest release source code to master using release title as the commit message
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+      - name: Set release notes name
+        run: |
+          export RELEASE_NAME_VERSION=${{ github.event.release.name }}
+          echo "RELEASE_NAME_VERSION=${RELEASE_NAME_VERSION}" >> $GITHUB_ENV
+      - name: Ensure new version is also set in CHANGES.md
+        run: |
+          grep --regexp "${RELEASE_NAME_VERSION}" CHANGES.md
+      - name: Setup & Build
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pipenv
+          export PATH=/home/runner/.local/bin:$PATH
+          pipenv install --dev --skip-lock
+          python setup.py sdist
+      - name: pypi-publish
+        uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: xoi-technologies
+          password: ${{ secrets.PYPI_API_TOKEN }}
+  sync_main:
+    needs: upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Sync main from detached head
+        run: git push origin HEAD:refs/heads/main --force

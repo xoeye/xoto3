@@ -17,12 +17,12 @@ Some of the features included:
 
   - pure data transformation safeguards against various sorts of data
     that DynamoDB won't accept.
-  - a transactional single-item update that allows you to express your
-    single-item update transformation in pure Python.
   - an multi-item, multi-table composable, retrying, transaction
     wrapper for TransactWriteItems, allowing arbitrary writes (up to
     the built in API limitations) to multiple databases to be
     expressed as pure Python.
+  - a transactional single-item update that allows you to express your
+    single-item update transformation in pure Python.
   - transparent BatchGet and BatchWrite utilities that work around the
     many annoyances of `boto3` and DynamoDB itself.
   - composable query interfaces that make writing basic queries against DynamoDB fun.
@@ -62,7 +62,27 @@ Some highlights:
 You can run all unit tests with `pipenv run pytest tests`.
 
 You can additionally include all the DynamoDB integration tests by
-setting an environment variable that is the name of a DynamoDB table
-with a primary key that is a partition key of `id` and no range
-key. The name of the environment variable to be set is
-`XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME`.
+setting some environment variables:
+
+`XOTO3_INTEGRATION_TEST_DYNAMODB_ID_TABLE_NAME`: the name of a
+DynamoDB table with a primary key that is a partition key of `id`
+and no range key.
+`XOTO3_INTEGRATION_TEST_NO_RANGE_KEY_INDEX_HASH_KEY`: the name of an
+attribute which is the partition key of a GSI with no range key.
+
+## Development
+
+### Writing tests
+
+Any new changes should be accompanied by unit tests. Integration tests
+should also be included where they are helpful.
+
+Integration tests should make use of environment variables and pytest's
+ability to skip a test in the event that an environment variable is not set.
+
+Additionally, pytest is configured to run all tests in parallel, so any
+integration test you write must be independent of any other test, and must not
+leave behind test data.
+
+Your integration tests should be written alongside the unit tests. We do not keep
+them in a separate folder.
