@@ -12,10 +12,6 @@ from xoto3.dynamodb.streams.consume import process_latest_from_stream
 from xoto3.dynamodb.streams.records import old_and_new_items_from_stream_event_record
 from xoto3.dynamodb.utils.index import hash_key_name, range_key_name
 
-DDB_RES = boto3.resource("dynamodb")
-
-DDB_STREAMS_CLIENT = boto3.client("dynamodbstreams")
-
 
 def make_accept_stream_item_for_table(item_slicer: Callable[[dict], str]):
     def accept_stream_item(record: dict):
@@ -54,6 +50,10 @@ def main():
         "--attribute-names", help="Any attributes other than the key to print", nargs="*"
     )
     args = parser.parse_args()
+
+    DDB_RES = boto3.resource("dynamodb")
+
+    DDB_STREAMS_CLIENT = boto3.client("dynamodbstreams")
 
     table = DDB_RES.Table(args.table_name)
 

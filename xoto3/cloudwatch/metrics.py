@@ -11,12 +11,12 @@ from logging import getLogger
 import botocore
 from typing_extensions import TypedDict
 
-from xoto3.lazy_session import tlls
+from xoto3.lazy_session import tll_from_session
 
 logger = getLogger(__name__)
 
 
-CLOUDWATCH_CLIENT = tlls("client", "cloudwatch")
+CLOUDWATCH_CLIENT = tll_from_session(lambda sess: sess.client("cloudwatch"))
 
 
 MetricUnits = frozenset(

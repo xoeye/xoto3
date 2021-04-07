@@ -1,4 +1,9 @@
-### 1.11.0
+### 1.11.1
+
+Change all Resources and Clients to use a thread-local Session to
+avoid race conditions.
+
+## 1.11.0
 
 - Update `find_index` and `require_index` to allow for an index with no range key.
 
