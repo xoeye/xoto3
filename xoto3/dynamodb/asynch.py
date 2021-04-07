@@ -1,23 +1,22 @@
 """A module that provides the core functionality for being able to
 write async code that transparently batches requests to Dynamo.
 """
+import asyncio
+import logging
+import traceback
 import typing as ty
+from asyncio import Queue, get_event_loop
 from collections import defaultdict
 from timeit import default_timer
-import traceback
-import logging
 
-import asyncio
-from asyncio import Queue, get_event_loop
+from xoto3.lazy_session import tll_from_session
 
-from xoto3.lazy_session import tlls
 from .batch_get import BatchGetItemTupleKeys
-
 
 logger = logging.getLogger(__name__)
 
 
-DYNAMODB_RESOURCE = tlls("resource", "dynamodb")
+DYNAMODB_RESOURCE = tll_from_session(lambda sess: sess.resource("dynamodb"))
 
 
 # When running in a Lambda, the round-trip latency to Dynamo is
@@ -144,9 +143,7 @@ def spawn_dynamo_fulfiller(
             table_batch_get_fulfiller, queue, request_map, logging_name=table_name
         )
     )
-    fulfiller = AsyncBatchRequestFulfiller(  # type: ignore
-        queue, request_map, task
-    )
+    fulfiller = AsyncBatchRequestFulfiller(queue, request_map, task)  # type: ignore
     return fulfiller
 
 

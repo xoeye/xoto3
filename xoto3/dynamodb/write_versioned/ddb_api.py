@@ -4,7 +4,6 @@ from functools import partial
 from logging import getLogger
 from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, cast
 
-import boto3
 from botocore.exceptions import ClientError
 from typing_extensions import Protocol, TypedDict
 
@@ -12,6 +11,7 @@ from xoto3.dynamodb.types import Item
 from xoto3.dynamodb.utils.serde import serialize_item
 from xoto3.dynamodb.utils.table import table_primary_keys
 from xoto3.errors import client_error_name
+from xoto3.lazy_session import tll_from_session
 
 from .keys import hashable_key_to_key
 from .types import (
@@ -34,6 +34,10 @@ _RetryableTransactionCancelledErrorCodes = {
 }
 
 
+_DDB_RES = tll_from_session(lambda s: s.resource("dynamodb"))
+_DDB_CLIENT = tll_from_session(lambda s: s.client("dynamodb"))
+
+
 def table_name(table: TableNameOrResource) -> str:
     if not isinstance(table, str):
         return table.name
@@ -43,7 +47,7 @@ def table_name(table: TableNameOrResource) -> str:
 def known_key_schema(table: TableNameOrResource) -> Tuple[str, ...]:
     try:
         if isinstance(table, str):
-            table = boto3.resource("dynamodb").Table(table)
+            table = _DDB_RES().Table(table)
         assert not isinstance(table, str)
         # your environment may or may not have permissions to read the key schema of its table.
         # in general, that is a nice permission to allow if possible.
@@ -113,14 +117,12 @@ def boto3_impl_defaults(
     batch_get_item: Optional[BatchGetItem] = None,
     transact_write_items: Optional[TransactWriteItems] = None,
 ) -> Tuple[BatchGetItem, TransactWriteItems]:
-    resource = None
     if not batch_get_item:
-        resource = boto3.resource("dynamodb")
-        batch_get_item = cast(BatchGetItem, partial(_ddb_batch_get_item, resource.batch_get_item))
+        batch_get_item = cast(BatchGetItem, partial(_ddb_batch_get_item, _DDB_RES().batch_get_item))
     assert batch_get_item
 
     if not transact_write_items:
-        transact_write_items = make_transact_multiple_but_optimize_single(boto3.client("dynamodb"))
+        transact_write_items = make_transact_multiple_but_optimize_single(_DDB_CLIENT())
     assert transact_write_items
 
     return (
