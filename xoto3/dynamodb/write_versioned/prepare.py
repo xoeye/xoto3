@@ -10,7 +10,7 @@ def _deduplicate_and_validate_keys(keys: Collection[ItemKey]) -> Iterable[ItemKe
     """All keys for a given table will need to be unique, and of course
     they must all share the same attribute names (or else they do not
     match the key schema for the table."""
-    seen = set()
+    seen: Set[tuple] = set()
     key_attributes: Set[KeyAttributeType] = set()
     for key in keys:
         tk = tuple(key.items())

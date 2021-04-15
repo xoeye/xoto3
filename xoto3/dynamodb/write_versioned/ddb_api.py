@@ -86,7 +86,7 @@ def _ddb_batch_get_item(
         for table_name, item_keys in item_keys_by_table_name.items()
         if item_keys  # don't make empty request to a table
     }
-    results = defaultdict(list)
+    results: Dict[str, List[Item]] = defaultdict(list)
     while unprocessed_keys:
         response = batch_get_item(RequestItems=unprocessed_keys)
         unprocessed_keys = response.get("UnprocessedKeys")  # type: ignore
@@ -235,6 +235,7 @@ def built_transaction_to_transact_write_items_args(
         def item_remains_unmodified(
             item_hashable_key: HashableItemKey, item: Optional[Item]
         ) -> dict:
+            """This will also check that the item still does not exist if it previously did not"""
             expression_ensuring_unmodifiedness = _serialize_versioned_expr(
                 versioned_item_expression(
                     get_existing_item(item_hashable_key).get(item_version_attribute, 0),

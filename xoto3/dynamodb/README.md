@@ -116,3 +116,5 @@ The above code will ensure that the 'state' of the collection of items
 as defined by your function is fully realized without intervening
 transactions, or retried with the new state of those items if the
 transaction is beaten or otherwise interfered with.
+
+For further documentation on this utility, see the full [readme](./write_versioned/README.md)
