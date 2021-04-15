@@ -1,14 +1,17 @@
 # versioned_transact_write_items
 
 This is a general-purpose system for writing retrying DynamoDB
-transactional operations on anywhere from 1 to
+transactional operations for 1 to
 [25](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-dynamodb-transactions)
-items as a pure function.
+items, using pure functions.
 
 The magic sauce here is the versioning - we use ConditionExpressions
 based on a specified attribute, by default `item_version`, to detect
 whether any intervening writes have been made, such that an `update`
-can safely be expressed as a simple `put`.
+can safely be expressed as a simple `put`. This makes the
+[ABA problem](https://en.wikipedia.org/wiki/ABA_problem) impossible,
+so you can write your business logic free of worry about the
+complexity of transactions in the real world.
 
 The API follows a consistent pattern of using provided functions to
 modify an opaque, immutable VersionedTransaction object. All writes to
@@ -34,7 +37,10 @@ task_table = wv.ItemTable('TaskTable', nicename='Task')
 user_table = wv.ItemTable('UserTable', nicename='User')
 user_key = dict(id='steve')
 
-# this transaction builder is a pure function that performs no IO
+# this transaction builder is a pure function that constructs
+# a value representing DynamoDB effects to be transactionally applied.
+# It will be called one to many times until its logic is successfully
+# applied to the items, or a (configurable) timeout is reached.
 def create_task_unless_exists(vt: wv.VersionedTransaction) -> wv.VersionedTransaction:
     vt = task_table.hypothesize(vt, task_key, None)
     # ^ we hypothesize that the task does not exist
@@ -57,7 +63,10 @@ def create_task_unless_exists(vt: wv.VersionedTransaction) -> wv.VersionedTransa
 
 # this call will cause the transaction builder function that we wrote
 # to be transactionally/atomically applied to the database.
-wv.versioned_transact_write_items(create_task_unless_exists)
+wv.versioned_transact_write_items(
+    create_task_unless_exists,
+    attempts_iterator=wv.timed_retry(timedelta(seconds=22.3)
+)
 ```
 
 ### Prefetching items to transact

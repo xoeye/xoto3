@@ -3,6 +3,7 @@ from .api2 import ItemTable, TypedTable, create_or_update, update_existing, upda
 from .errors import TableSchemaUnknownError, TransactionAttemptsOverrun  # noqa
 from .modify import delete, put  # noqa
 from .read import get, require  # noqa
+from .retry import timed_retry  # noqa
 from .run import versioned_transact_write_items  # noqa
 from .types import (  # noqa
     ItemKeysByTableName,

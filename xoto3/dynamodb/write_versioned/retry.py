@@ -1,5 +1,6 @@
 import random
 import time
+from datetime import timedelta
 from logging import getLogger
 from typing import Iterator
 
@@ -25,12 +26,12 @@ def _choose_sleep_len_to_average_N_attempts_in_the_total_interval(
 
 
 def timed_retry(
-    transaction_expiration_seconds: float = 5.0,
+    transaction_expiration: timedelta = timedelta(seconds=5.0),
     max_attempts_before_expiration: int = 25,
     random_sleep_length: bool = True,
 ) -> Iterator:
     attempt = 0
-    expiring_at = time.monotonic() + transaction_expiration_seconds
+    expiring_at = time.monotonic() + transaction_expiration.total_seconds()
 
     while attempt == 0 or time.monotonic() <= expiring_at:
         attempt += 1
