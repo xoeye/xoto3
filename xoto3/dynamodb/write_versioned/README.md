@@ -49,32 +49,33 @@ task_key = dict(id='task1')
 new_task = dict(task_key, name='plant tree', is_done=False, user_id='steve')
 
 # this transaction builder is a pure function that constructs
-# a value representing DynamoDB effects to be transactionally applied.
-# It will be called one to many times until its logic is successfully
-# applied to the items, or a (configurable) timeout is reached.
+# a value representing DynamoDB effects to be transactionally/atomically applied.
 def create_task_unless_exists(vt: wv.VersionedTransaction) -> wv.VersionedTransaction:
     vt = task_table.presume(task_key, None)(vt)
-    # ^ we presume that the task does not exist
-    # - this is a no-op if a value has already been fetched
+    # ^ we presume that the task does not exist, i.e. has the value None
+    # This is a no-op if a value has already been fetched.
+    # This is also purely an optimization to avoid an initial read;
+    # the whole transaction would result in the same data in the table without it.
+
     existing_task = task_table.get(task_key)(vt)
-    if existing_task is None:
-        # ^ item is None means the task does not exist
-        vt = task_table.put(new_task)(vt)
-        # ^ put this item into this table as long as the item transactionally does not exist
-        user = user_table.require(user_key)(vt)
-        # ^ fetch the user and raise an exception if it does not exist
-        user['task_ids'].append(task_key['id'])
-        vt = user_table.put(user)(vt)
-        # ^ make sure that the user knows about its task
+    if existing_task:
         return vt
-        # ^ return the built transaction to be executed.
-        # if anything has changed in the meantime,
-        # our transaction builder function will be run again with the latest data.
+        # ^ perform no action as long as the item already exists
+
+    vt = task_table.put(new_task)(vt)
+    # ^ put this item into this table as long as the item does not exist
+    user = user_table.require(user_key)(vt)
+    # ^ fetch the user and raise an exception if it does not exist
+    user['task_ids'].append(task_key['id'])
+    vt = user_table.put(user)(vt)
+    # ^ make sure that the user knows about its task
     return vt
-    # ^ perform no action as long as the item transactionally already exists
+    # ^ return the built transaction to be executed.
 
 # this call will cause the transaction builder function above
-# to be transactionally/atomically applied to the database.
+# to be called one to many times until its logic is atomically
+# applied (there are no intervening writes to any of the items),
+# or until a (configurable-with-default) timeout is reached.
 wv.versioned_transact_write_items(
     create_task_unless_exists,
     attempts_iterator=wv.timed_retry(timedelta(seconds=22.3)

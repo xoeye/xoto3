@@ -53,14 +53,3 @@ def test_define_table_doesnt_redefine():
     tx = delete(VersionedTransaction(dict()), "table1", dict(id="foo"))
     same_tx = define_table(tx, "table1", "id")
     assert same_tx is tx
-
-
-def create_bar(vt):
-    vt = presume(vt, "John", dict(id=2), None)
-    if get(vt, "John", dict(id=2)):
-        return vt
-    vt = put(vt, "John", dict(id=2, foo=3))
-    return vt
-
-
-# versioned_transact_write_items(tb, dict(John=[dict(id=1, foo=2)]))

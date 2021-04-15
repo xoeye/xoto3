@@ -131,19 +131,18 @@ def presume(
     and will additionally check your presumed value against the table when
     the transaction is run.
 
-    This provides an efficient "create unless exists" pattern when the
-    item value provided is `None`, because the initial transaction can
-    proceed directly to a write without needing to perform an initial
-    read for something for which you have provided a presumed value.  If
-    the item turns out to exist in the table when the transaction is
-    executed, the transaction will restart, the item will be
-    prefetched like usual, and this procedure will have no effect on
-    the transaction.
+    This is purely a cost optimization to avoid fetching something
+    when we believe we already know its value. Any transaction builder
+    will result in exactly the same data written to the table with or
+    without this statement. If the item turns out to have a different
+    value in the table than you presumed when the transaction is
+    executed, the transaction will restart, the item will be freshly
+    fetched like usual, and this procedure will have no effect on the
+    transaction.
 
     This may also be used for the purpose of stubbing out values in an
     empty VersionedTransaction for writing unit tests against your
     transaction builder functions.
-
     """
     if item_value is not None:
         for key_attr, key_val in item_key.items():
