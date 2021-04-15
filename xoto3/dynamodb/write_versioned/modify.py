@@ -117,24 +117,24 @@ def delete(
     return _write(transaction, table, Delete(item_or_key), nicename=nicename)
 
 
-def hypothesize(
+def presume(
     transaction: VersionedTransaction,
     table: TableNameOrResource,
     item_key: ItemKey,
     item_value: Optional[Item],
 ) -> VersionedTransaction:
 
-    """'To take as true or as a fact without actual proof'
+    """'To assume as true in the absence of proof to the contrary.'
 
     Returns a modified transaction if the value of the item is not already
-    known. This will make the hypothesized value available via `get`,
-    and will additionally check your hypothesis against the table when
+    known. This will make the presumed value available via `get`,
+    and will additionally check your presumed value against the table when
     the transaction is run.
 
     This provides an efficient "create unless exists" pattern when the
     item value provided is `None`, because the initial transaction can
     proceed directly to a write without needing to perform an initial
-    read for something for which you have provided a hypothesis.  If
+    read for something for which you have provided a presumed value.  If
     the item turns out to exist in the table when the transaction is
     executed, the transaction will restart, the item will be
     prefetched like usual, and this procedure will have no effect on

@@ -6,7 +6,7 @@ from xoto3.dynamodb.write_versioned.modify import (
     TableSchemaUnknownError,
     define_table,
     delete,
-    hypothesize,
+    presume,
 )
 from xoto3.dynamodb.write_versioned.types import _TableData
 
@@ -21,13 +21,13 @@ def test_cant_delete_non_prefetched_item_without_specifying_key():
         delete(tx, "table2", dict(id=4, value=7, other_value=9))
 
 
-def test_hypothesize():
+def test_presume():
     tx = VersionedTransaction(dict())
-    tx = hypothesize(tx, "steve", dict(group="g", id="123"), None)
+    tx = presume(tx, "steve", dict(group="g", id="123"), None)
     assert None is get(tx, "steve", dict(group="g", id="123"))
 
 
-def test_hypothesize_already_exists():
+def test_presume_already_exists():
     key = dict(id=123)
     tx = VersionedTransaction(
         dict(
@@ -36,7 +36,7 @@ def test_hypothesize_already_exists():
             )
         )
     )
-    tx = hypothesize(tx, "steve", key, None)
+    tx = presume(tx, "steve", key, None)
     assert require(tx, "steve", dict(id=123))["foo"] == 2
 
 
@@ -56,7 +56,7 @@ def test_define_table_doesnt_redefine():
 
 
 def create_bar(vt):
-    vt = hypothesize(vt, "John", dict(id=2), None)
+    vt = presume(vt, "John", dict(id=2), None)
     if get(vt, "John", dict(id=2)):
         return vt
     vt = put(vt, "John", dict(id=2, foo=3))

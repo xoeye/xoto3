@@ -24,6 +24,12 @@ resulting in a fully composable transaction system - any transaction
 builder can be composed with any other in whatever logical order is
 necessary.
 
+This API provides partial-application-by-default, because that makes
+certain use cases much cleaner to express. This means that you'll be
+writing things like `table.get(key)(transaction)` instead of
+`table.get(key, transaction)`, i.e. using more parentheses rather than
+commas.
+
 ### put unless exists
 
 As a simple but non-trivial example, you can perform a put-unless-exists like so:
@@ -31,28 +37,34 @@ As a simple but non-trivial example, you can perform a put-unless-exists like so
 ```python
 import xoto3.dynamodb.write_versioned as wv
 
+# construct these at a module level and share them - they are
+# threadsafe because they are pure values.
+task_table =
+wv.ItemTable('TaskTable', nicename='Task') user_table =
+wv.ItemTable('UserTable', nicename='User')
+
+# imagine these were passed in via an API
+user_key = dict(id='steve')
 task_key = dict(id='task1')
 new_task = dict(task_key, name='plant tree', is_done=False, user_id='steve')
-task_table = wv.ItemTable('TaskTable', nicename='Task')
-user_table = wv.ItemTable('UserTable', nicename='User')
-user_key = dict(id='steve')
 
 # this transaction builder is a pure function that constructs
 # a value representing DynamoDB effects to be transactionally applied.
 # It will be called one to many times until its logic is successfully
 # applied to the items, or a (configurable) timeout is reached.
 def create_task_unless_exists(vt: wv.VersionedTransaction) -> wv.VersionedTransaction:
-    vt = task_table.hypothesize(vt, task_key, None)
-    # ^ we hypothesize that the task does not exist
+    vt = task_table.presume(task_key, None)(vt)
+    # ^ we presume that the task does not exist
     # - this is a no-op if a value has already been fetched
-    if task_table.get(vt, task_key) is None:
+    existing_task = task_table.get(task_key)(vt)
+    if existing_task is None:
         # ^ item is None means the task does not exist
-        vt = task_table.put(vt, new_task)
+        vt = task_table.put(new_task)(vt)
         # ^ put this item into this table as long as the item transactionally does not exist
-        user = user_table.require(vt, user_key)
+        user = user_table.require(user_key)(vt)
         # ^ fetch the user and raise an exception if it does not exist
         user['task_ids'].append(task_key['id'])
-        vt = user_table.put(vt, user)
+        vt = user_table.put(user)(vt)
         # ^ make sure that the user knows about its task
         return vt
         # ^ return the built transaction to be executed.
@@ -61,7 +73,7 @@ def create_task_unless_exists(vt: wv.VersionedTransaction) -> wv.VersionedTransa
     return vt
     # ^ perform no action as long as the item transactionally already exists
 
-# this call will cause the transaction builder function that we wrote
+# this call will cause the transaction builder function above
 # to be transactionally/atomically applied to the database.
 wv.versioned_transact_write_items(
     create_task_unless_exists,

@@ -7,7 +7,7 @@ functionality, and may safely be ignored.
 from copy import deepcopy
 from typing import Callable, Generic, Optional, TypeVar, Union
 
-from .modify import define_table, delete, hypothesize, put
+from .modify import define_table, delete, presume, put
 from .read import get, require
 from .types import Item, ItemKey, TransactionBuilder, VersionedTransaction
 
@@ -47,32 +47,37 @@ class TypedTable(Generic[T]):
         self.type_deserializer = type_deserializer
         self.type_serializer = type_serializer
 
-    def get(self, vt: VersionedTransaction, key: ItemKey) -> Optional[T]:
-        item = get(vt, self.lazy_table_name(), key, copy=False, nicename=self.type_name)
-        return self.type_deserializer(item) if item else None
+    def get(self, key: ItemKey) -> Callable[[VersionedTransaction], Optional[T]]:
+        """Get an item from the database if it exists"""
 
-    def require(self, vt: VersionedTransaction, key: ItemKey) -> T:
-        return self.type_deserializer(
+        def deser_opt(item: Optional[Item]) -> Optional[T]:
+            return self.type_deserializer(item) if item else None
+
+        return lambda vt: deser_opt(
+            get(vt, self.lazy_table_name(), key, copy=False, nicename=self.type_name)
+        )
+
+    def require(self, key: ItemKey) -> Callable[[VersionedTransaction], T]:
+        """Return the item for this key, or raise an ItemNotFoundException if it does not"""
+        return lambda vt: self.type_deserializer(
             require(vt, self.lazy_table_name(), key, copy=False, nicename=self.type_name)
         )
 
-    def put(self, vt: VersionedTransaction, typed_item: T) -> VersionedTransaction:
-        return put(
+    def put(self, typed_item: T) -> TransactionBuilder:
+        return lambda vt: put(
             vt, self.lazy_table_name(), self.type_serializer(typed_item), nicename=self.type_name
         )
 
-    def delete(self, vt: VersionedTransaction, key: ItemKey) -> VersionedTransaction:
-        return delete(vt, self.lazy_table_name(), key, nicename=self.type_name)
+    def delete(self, key: ItemKey) -> TransactionBuilder:
+        return lambda vt: delete(vt, self.lazy_table_name(), key, nicename=self.type_name)
 
-    def hypothesize(
-        self, vt: VersionedTransaction, key: ItemKey, value: Optional[T],
-    ) -> VersionedTransaction:
-        return hypothesize(
+    def presume(self, key: ItemKey, value: Optional[T],) -> TransactionBuilder:
+        return lambda vt: presume(
             vt, self.lazy_table_name(), key, None if value is None else self.type_serializer(value),
         )
 
-    def define(self, vt: VersionedTransaction, *key_attributes: str) -> VersionedTransaction:
-        return define_table(vt, self.lazy_table_name(), *key_attributes)
+    def define(self, *key_attributes: str) -> TransactionBuilder:
+        return lambda vt: define_table(vt, self.lazy_table_name(), *key_attributes)
 
 
 def ItemTable(
@@ -90,47 +95,38 @@ def ItemTable(
 
 
 def update_if_exists(
-    table_get: Callable[[VersionedTransaction, ItemKey], Optional[T]],
-    table_put: Callable[[VersionedTransaction, T], VersionedTransaction],
-    updater: Callable[[T], T],
-    key: ItemKey,
+    table: TypedTable[T], updater: Callable[[T], T], key: ItemKey,
 ) -> TransactionBuilder:
     """Does not call the updater function if the item does not exist in the table."""
 
-    def update_translator(vt: VersionedTransaction) -> VersionedTransaction:
-        item = table_get(vt, key)
+    def _update_if_exists(vt: VersionedTransaction) -> VersionedTransaction:
+        item = table.get(key)(vt)
         if item:
-            return table_put(vt, updater(item))
+            return table.put(updater(item))(vt)
         return vt
 
-    return update_translator
+    return _update_if_exists
 
 
 def update_existing(
-    table_require: Callable[[VersionedTransaction, ItemKey], T],
-    table_put: Callable[[VersionedTransaction, T], VersionedTransaction],
-    updater: Callable[[T], T],
-    key: ItemKey,
+    table: TypedTable[T], updater: Callable[[T], T], key: ItemKey,
 ) -> TransactionBuilder:
     """Raises ItemNotFoundException if the item to be updated does not exist in the table."""
 
     def update_translator(vt: VersionedTransaction) -> VersionedTransaction:
-        return table_put(vt, updater(table_require(vt, key)))
+        return table.put(updater(table.require(key)(vt)))(vt)
 
     return update_translator
 
 
 def create_or_update(
-    table_get: Callable[[VersionedTransaction, ItemKey], Optional[T]],
-    table_put: Callable[[VersionedTransaction, T], VersionedTransaction],
-    creator_updater: Callable[[Optional[T]], T],
-    key: ItemKey,
+    table: TypedTable[T], creator_updater: Callable[[Optional[T]], T], key: ItemKey,
 ) -> TransactionBuilder:
     """Provides the item if it exists, or None if it does not, but expects
     your callable to return a writeable item.
     """
 
     def create_or_update_trans(vt: VersionedTransaction) -> VersionedTransaction:
-        return table_put(vt, creator_updater(table_get(vt, key)))
+        return table.put(creator_updater(table.get(key)(vt)))(vt)
 
     return create_or_update_trans
