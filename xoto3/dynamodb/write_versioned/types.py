@@ -30,10 +30,15 @@ class _TableData(NamedTuple):
 
 
 class VersionedTransaction(NamedTuple):
-    """A container suitable for functional usage of get, put, and delete.
+    """An opaque object representing the state of the database at the time
+    the transaction began, plus all effects defined by modifier
+    operations (put, delete), plus database specifications defined by
+    the presume and define_table operations.
 
-    This type does NOT constitute an API, and you should never modify
-    this object directly.
+    The internals of this type does NOT constitute an API, and you
+    should never modify this object except via the provided API
+    functions.
+
     """
 
     tables: Mapping[str, _TableData]

@@ -7,15 +7,26 @@ functionality, and may safely be ignored.
 from copy import deepcopy
 from typing import Callable, Generic, Optional, TypeVar, Union
 
-from .modify import define_table, delete, presume, put
+from .modify import delete, put
 from .read import get, require
+from .specify import define_table, presume
 from .types import Item, ItemKey, TransactionBuilder, VersionedTransaction
 
 T = TypeVar("T")
 
 
 class TypedTable(Generic[T]):
-    """In practice, it's nice to have table-aware closures of these
+    """This is a table-centric API wrapper for the low-level transaction
+    interaction capabilities provided by `read.py` and
+    `modify.py`. There are simplifed docs here, and you can reference
+    the underlying implementations for more comprehensive
+    documentation.
+
+    In all cases, these methods are ways of interacting with an opaque
+    VersionedTransaction object which represents the state of the
+    database before the transaction began
+
+    In practice, it's nice to have table-aware closures of these
     functions when dealing with a table, versus providing the string
     table name to every call. This is especially valuable if you're
     dealing with only a single table over and over again, and there's
@@ -26,7 +37,7 @@ class TypedTable(Generic[T]):
     performing the standard deepcopy-on-get to prevent mutating the
     immutable items retrieved from a VersionedTransaction.  Therefore
     the standard copy-on-get will not be performed. If you have no
-    need for additional type deserialization, you should provide
+    need for additional type deserialization, you must provide
     `copy.deepcopy`, or use `ItemTable`, to retain the standard, safe
     behavior.
 
@@ -41,6 +52,11 @@ class TypedTable(Generic[T]):
         # from your code to the database - on the write path
         item_name: str = "Item",
     ):
+        """Construct a table-centric API utility for a given table with
+        shared serialization and deserialization.
+
+        Your type deserializer must implement a form of deep copy.
+        """
         if isinstance(table_name, str):
             self.lazy_table_name = lambda: table_name
         else:
@@ -74,11 +90,20 @@ class TypedTable(Generic[T]):
         return lambda vt: delete(vt, self.lazy_table_name(), key, nicename=self.item_name)
 
     def presume(self, key: ItemKey, value: Optional[T]) -> TransactionBuilder:
+        """'To assume as true in the absence of proof to the contrary.'
+
+        Returns a modified transaction with this value set if the value of
+        the item is not already known. If a value has already been fetched
+        or presumed, this will be a no-op.
+
+        See further docs in .read.py.
+        """
         return lambda vt: presume(
             vt, self.lazy_table_name(), key, None if value is None else self.type_serializer(value),
         )
 
     def define(self, *key_attributes: str) -> TransactionBuilder:
+        """Idempotent definition of key attributes for a table without any I/O"""
         return lambda vt: define_table(vt, self.lazy_table_name(), *key_attributes)
 
 

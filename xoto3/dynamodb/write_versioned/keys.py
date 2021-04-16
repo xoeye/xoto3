@@ -1,6 +1,6 @@
 """Private implementation details for versioned_transact_write_items"""
 
-from typing import Collection, Sequence, Union
+from typing import Collection, Sequence, Tuple, Union
 
 from xoto3.dynamodb.types import Item, ItemKey
 
@@ -30,3 +30,7 @@ def hashable_key_to_key(key_attributes: Sequence[str], hashable_key: HashableIte
         return {key_attributes[0]: hashable_key[0], key_attributes[1]: hashable_key[1]}
     assert len(key_attributes) == 1
     return {key_attributes[0]: hashable_key}
+
+
+def standard_key_attributes(*key_attrs: str) -> Tuple[str, ...]:
+    return tuple(sorted(key_attrs))

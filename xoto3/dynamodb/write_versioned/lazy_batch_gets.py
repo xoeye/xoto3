@@ -1,8 +1,8 @@
 from typing import Collection, Mapping, Tuple
 
 from .errors import ItemNotFetchedException
-from .modify import presume
 from .prepare import add_item_to_base_request, parse_batch_get_request, prepare_clean_transaction
+from .specify import presume
 from .types import BatchGetItem, ItemKey, TransactionBuilder, VersionedTransaction
 
 
