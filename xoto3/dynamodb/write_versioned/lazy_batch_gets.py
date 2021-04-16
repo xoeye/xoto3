@@ -1,6 +1,6 @@
 from typing import Collection, Mapping, Tuple
 
-from .errors import ItemNotYetFetchedError
+from .errors import ItemNotFetchedException
 from .modify import presume
 from .prepare import add_item_to_base_request, parse_batch_get_request, prepare_clean_transaction
 from .types import BatchGetItem, ItemKey, TransactionBuilder, VersionedTransaction
@@ -43,14 +43,14 @@ def lazy_batch_getting_transaction_builder(
                     # the builder has asked for everything it knows to ask for
                     # and we need to restart from the batch get above.
                     break
-            except ItemNotYetFetchedError as nyf:
-                assert nyf.key
+            except ItemNotFetchedException as inf:
+                assert inf.key
                 item_keys_by_table_name = add_item_to_base_request(
-                    item_keys_by_table_name, (nyf.table_name, nyf.key),
+                    item_keys_by_table_name, (inf.table_name, inf.key),
                 )
-                if getattr(nyf, "force_immediate_fetch", False):
+                if getattr(inf, "force_immediate_fetch", False):
                     # perform immediate fetch; without it the transaction cannot proceed
                     break
                 will_require_fetch = True
                 # presume that the value is None for now, to let this `get` pass instead of excepting.
-                clean_transaction = presume(clean_transaction, nyf.table_name, nyf.key, None)
+                clean_transaction = presume(clean_transaction, inf.table_name, inf.key, None)

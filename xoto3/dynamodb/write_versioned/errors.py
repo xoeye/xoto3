@@ -22,13 +22,13 @@ class TableSchemaUnknownError(KeyError):
     """
 
 
-class ItemNotYetFetchedError(DynamoDbItemException):
+class ItemNotFetchedException(DynamoDbItemException):
     """Used internally to send control flow and information back to the
     transaction runner to prompt a lazy load of an item not already
     fetched.
 
     You should never see one of these errors unless you're writing unit tests
-    and didn't properly set up your initial transaction state.
+    and didn't define an initial value for your items with `presume`.
     """
 
 

@@ -6,7 +6,7 @@ module and use only what it exposes.
 """
 from .api2 import ItemTable, TypedTable, create_or_update, update_existing, update_if_exists  # noqa
 from .errors import (  # noqa
-    ItemNotYetFetchedError,
+    ItemNotFetchedException,
     TableSchemaUnknownError,
     TransactionAttemptsOverrun,
 )

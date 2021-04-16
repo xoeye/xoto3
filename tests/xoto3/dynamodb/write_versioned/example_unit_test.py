@@ -54,7 +54,7 @@ def test_task_and_user_are_not_written_if_task_already_exists():
     assert resulting_task == existing_task
     # the task remains unchanged
 
-    with pytest.raises(wv.ItemNotYetFetchedError):
+    with pytest.raises(wv.ItemNotFetchedException):
         user_table.get(dict(id="felicity"))(t)
         # the user was not even fetched, much less written
 
