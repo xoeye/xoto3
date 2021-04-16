@@ -50,8 +50,7 @@ def test_task_and_user_are_not_written_if_task_already_exists():
 
     t = create_and_link_task_unless_exists(t)
 
-    resulting_task = task_table.require(task_key)(t)
-    assert resulting_task == existing_task
+    assert existing_task == task_table.require(task_key)(t)
     # the task remains unchanged
 
     with pytest.raises(wv.ItemUndefinedException):

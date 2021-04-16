@@ -50,7 +50,7 @@ class TypedTable(Generic[T]):
 
     def __init__(
         self,
-        table_name: Union[Thunk[TableNameOrResource], TableNameOrResource],
+        table_name: Union[TableNameOrResource, Thunk[TableNameOrResource]],
         type_deserializer: Callable[[Item], T],
         # from the database to your code - on the read path
         type_serializer: Callable[[T], Item],

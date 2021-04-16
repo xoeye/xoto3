@@ -23,18 +23,25 @@ def presume(
     will additionally check your presumed value against the table when
     the transaction is run.
 
-    This is purely a cost optimization to avoid fetching something
-    when we believe we already know its value. Any transaction builder
-    will result in exactly the same data written to the table with or
-    without this statement. If the item turns out to have a different
-    value in the table than you presumed when the transaction is
-    executed, the transaction will restart, the item will be freshly
-    fetched like usual, and this procedure will have no effect on the
-    transaction.
+    At runtime (within the context of
+    `versioned_transact_write_items`), this is purely a cost
+    optimization to avoid fetching an item for which you believe you
+    already know the value. Whether your presumption is right, wrong,
+    or you don't presume anything, your transaction builder will
+    result in exactly the same data written to the table.
 
-    This may also be used for the purpose of stubbing out values in an
-    empty VersionedTransaction for writing unit tests against your
-    transaction builder functions.
+    As with any item fetched or presumed, if the item turns out to
+    have a different value in the table than you presumed when the
+    transaction is committed, the transaction will restart, the item
+    will be freshly fetched like usual, and your use of presumption
+    will have no ultimate effect on the data.
+
+    For unit testing, this is the approved approach for setting up a
+    VersionedTransaction 'fixture', where you declare the state of the
+    database before your transaction builder is run. Set a presumed
+    value for every item that you will attempt to `get` or `require`
+    within your transaction builder, otherwise your test will error
+    with ItemUndefinedException.
 
     """
     if item_value is not None:

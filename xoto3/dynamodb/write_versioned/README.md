@@ -24,6 +24,20 @@ resulting in a fully composable transaction system - any transaction
 builder can be composed with any other in whatever logical order is
 necessary.
 
+## Low Level API
+
+At base, you will be calling `versioned_transact_write_items`, and
+passing a function which makes use of the VersionedTransaction
+API. The low level implementation of the VersionedTransaction API is
+defined in three files - `read.py`, `modify.py`, and `specify.py`,
+though it is meant to be imported via the top level module.
+
+## High Level Table-oriented API
+
+From use we've discovered that it's nicer to say certain things once
+and not have to repeat ourselves. A higher level table-oriented API is
+now offered via the `ItemTable` and `TypedTable` classes.
+
 This API provides partial-application-by-default, because that makes
 certain use cases much cleaner to express. This means that you'll be
 writing things like `table.get(key)(transaction)` instead of
