@@ -88,6 +88,7 @@ def _ddb_batch_get_item(
     }
     results: Dict[str, List[Item]] = defaultdict(list)
     while unprocessed_keys:
+        _log.debug(f"Performing batch_get of {len(unprocessed_keys)} keys")
         response = batch_get_item(RequestItems=unprocessed_keys)
         unprocessed_keys = response.get("UnprocessedKeys")  # type: ignore
         for table_name, items in response["Responses"].items():

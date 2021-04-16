@@ -72,10 +72,14 @@ def require(
     exist in the table.
     """
     table_name = _table_name(table)
-    item = get(transaction, table_name, item_key, nicename=nicename, **kwargs)
-    if not item:
-        raise_if_empty_getitem_response(
-            dict(), nicename=nicename, key=item_key, table_name=table_name
-        )
-    assert item is not None
-    return item
+    try:
+        item = get(transaction, table_name, item_key, nicename=nicename, **kwargs)
+        if not item:
+            raise_if_empty_getitem_response(
+                dict(), nicename=nicename, key=item_key, table_name=table_name
+            )
+        assert item is not None
+        return item
+    except ItemNotYetFetchedError as nyf:
+        nyf.force_immediate_fetch = True  # type: ignore
+        raise nyf

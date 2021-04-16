@@ -52,7 +52,6 @@ def _update(key, val):
 
 
 def test_api2_update_if_exists():
-    """This test is long because of how much effort it takes to set up a fake table"""
     vt, table = _fake_table(lambda: "steve", "id")  # type: ignore
 
     key = dict(id="exists")

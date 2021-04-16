@@ -71,7 +71,7 @@ class TypedTable(Generic[T]):
     def delete(self, key: ItemKey) -> TransactionBuilder:
         return lambda vt: delete(vt, self.lazy_table_name(), key, nicename=self.type_name)
 
-    def presume(self, key: ItemKey, value: Optional[T],) -> TransactionBuilder:
+    def presume(self, key: ItemKey, value: Optional[T]) -> TransactionBuilder:
         return lambda vt: presume(
             vt, self.lazy_table_name(), key, None if value is None else self.type_serializer(value),
         )

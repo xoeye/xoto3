@@ -13,7 +13,7 @@ from xoto3.dynamodb.write_versioned.types import (
 )
 
 
-def _probe_table(table_data: _TableData, key: ItemKey,) -> Optional[Item]:
+def _probe_table(table_data: _TableData, key: ItemKey) -> Optional[Item]:
     hkey = hashable_key(key)
     if hkey in table_data.effects:
         return table_data.effects[hkey]

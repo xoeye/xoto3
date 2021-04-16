@@ -50,26 +50,26 @@ new_task = dict(task_key, name='plant tree', is_done=False, user_id='steve')
 
 # this transaction builder is a pure function that constructs
 # a value representing DynamoDB effects to be transactionally/atomically applied.
-def create_task_unless_exists(vt: wv.VersionedTransaction) -> wv.VersionedTransaction:
-    vt = task_table.presume(task_key, None)(vt)
+def create_task_unless_exists(t: wv.VersionedTransaction) -> wv.VersionedTransaction:
+    t = task_table.presume(task_key, None)(t)
     # ^ we presume that the task does not exist, i.e. has the value None
     # This is a no-op if a value has already been fetched.
     # This is also purely an optimization to avoid an initial read;
     # the whole transaction would result in the same data in the table without it.
 
-    existing_task = task_table.get(task_key)(vt)
+    existing_task = task_table.get(task_key)(t)
     if existing_task:
-        return vt
+        return t
         # ^ perform no action as long as the item already exists
 
-    vt = task_table.put(new_task)(vt)
+    t = task_table.put(new_task)(t)
     # ^ put this item into this table as long as the item does not exist
-    user = user_table.require(user_key)(vt)
+    user = user_table.require(user_key)(t)
     # ^ fetch the user and raise an exception if it does not exist
     user['task_ids'].append(task_key['id'])
-    vt = user_table.put(user)(vt)
+    t = user_table.put(user)(t)
     # ^ make sure that the user knows about its task
-    return vt
+    return t
     # ^ return the built transaction to be executed.
 
 # this call will cause the transaction builder function above
