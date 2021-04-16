@@ -113,6 +113,6 @@ is that all of your business logic can be expressed directly in terms
 of interacting with the database, but you can fully unit test that behavior.
 
 See the
-[included example unit tests](../../../tests/xoto3/dynamodb/write_versioned_example_unit_test.py)
+[included example unit tests](../../../tests/xoto3/dynamodb/write_versioned/example_unit_test.py)
 for a working example of unit testing the above
 `create_and_link_task_unless_exists` function.
