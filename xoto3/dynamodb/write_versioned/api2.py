@@ -19,15 +19,17 @@ class TypedTable(Generic[T]):
     functions when dealing with a table, versus providing the string
     table name to every call. This is especially valuable if you're
     dealing with only a single table over and over again, and there's
-    some kind of ser/de you want to run consistently against that
-    table.
+    some kind of de/serialization you want to run consistently against
+    that table.
 
     Note that your type_deserializer is now the expected method of
     performing the standard deepcopy-on-get to prevent mutating the
     immutable items retrieved from a VersionedTransaction.  Therefore
     the standard copy-on-get will not be performed. If you have no
     need for additional type deserialization, you should provide
-    `copy.deepcopy` to retain the standard, safe behavior.
+    `copy.deepcopy`, or use `ItemTable`, to retain the standard, safe
+    behavior.
+
     """
 
     def __init__(
@@ -37,13 +39,13 @@ class TypedTable(Generic[T]):
         # from the database to your code - on the read path
         type_serializer: Callable[[T], Item],
         # from your code to the database - on the write path
-        type_name: str = "Item",
+        item_name: str = "Item",
     ):
         if isinstance(table_name, str):
             self.lazy_table_name = lambda: table_name
         else:
             self.lazy_table_name = table_name
-        self.type_name = type_name
+        self.item_name = item_name
         self.type_deserializer = type_deserializer
         self.type_serializer = type_serializer
 
@@ -54,22 +56,22 @@ class TypedTable(Generic[T]):
             return self.type_deserializer(item) if item else None
 
         return lambda vt: deser_opt(
-            get(vt, self.lazy_table_name(), key, copy=False, nicename=self.type_name)
+            get(vt, self.lazy_table_name(), key, copy=False, nicename=self.item_name)
         )
 
     def require(self, key: ItemKey) -> Callable[[VersionedTransaction], T]:
         """Return the item for this key, or raise an ItemNotFoundException if it does not"""
         return lambda vt: self.type_deserializer(
-            require(vt, self.lazy_table_name(), key, copy=False, nicename=self.type_name)
+            require(vt, self.lazy_table_name(), key, copy=False, nicename=self.item_name)
         )
 
     def put(self, typed_item: T) -> TransactionBuilder:
         return lambda vt: put(
-            vt, self.lazy_table_name(), self.type_serializer(typed_item), nicename=self.type_name
+            vt, self.lazy_table_name(), self.type_serializer(typed_item), nicename=self.item_name
         )
 
     def delete(self, key: ItemKey) -> TransactionBuilder:
-        return lambda vt: delete(vt, self.lazy_table_name(), key, nicename=self.type_name)
+        return lambda vt: delete(vt, self.lazy_table_name(), key, nicename=self.item_name)
 
     def presume(self, key: ItemKey, value: Optional[T]) -> TransactionBuilder:
         return lambda vt: presume(
@@ -91,7 +93,7 @@ def ItemTable(
     def _item_ident(item: Item) -> Item:
         return item
 
-    return TypedTable(table_name, deepcopy, _item_ident, type_name=item_name)
+    return TypedTable(table_name, deepcopy, _item_ident, item_name=item_name)
 
 
 def update_if_exists(

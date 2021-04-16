@@ -39,18 +39,16 @@ import xoto3.dynamodb.write_versioned as wv
 
 # construct these at a module level and share them - they are
 # threadsafe because they are pure values.
-task_table =
-wv.ItemTable('TaskTable', nicename='Task') user_table =
-wv.ItemTable('UserTable', nicename='User')
+task_table = wv.ItemTable('TaskTable', item_name='Task')
+user_table = wv.ItemTable('UserTable', item_name='User')
 
 # imagine these were passed in via an API
-user_key = dict(id='steve')
-task_key = dict(id='task1')
-new_task = dict(task_key, name='plant tree', is_done=False, user_id='steve')
+task_key = dict(id="task1")
+new_task = dict(task_key, name="plant tree", num_subtasks=3, user_id="steve")
 
 # this transaction builder is a pure function that constructs
 # a value representing DynamoDB effects to be transactionally/atomically applied.
-def create_task_unless_exists(t: wv.VersionedTransaction) -> wv.VersionedTransaction:
+def create_and_link_task_unless_exists(t: wv.VersionedTransaction) -> wv.VersionedTransaction:
     t = task_table.presume(task_key, None)(t)
     # ^ we presume that the task does not exist, i.e. has the value None
     # This is a no-op if a value has already been fetched.
@@ -64,9 +62,9 @@ def create_task_unless_exists(t: wv.VersionedTransaction) -> wv.VersionedTransac
 
     t = task_table.put(new_task)(t)
     # ^ put this item into this table as long as the item does not exist
-    user = user_table.require(user_key)(t)
+    user = user_table.require(dict(id=new_task["user_id"]))(t)
     # ^ fetch the user and raise an exception if it does not exist
-    user['task_ids'].append(task_key['id'])
+    user["task_ids"].append(task_key["id"])
     t = user_table.put(user)(t)
     # ^ make sure that the user knows about its task
     return t
@@ -77,7 +75,7 @@ def create_task_unless_exists(t: wv.VersionedTransaction) -> wv.VersionedTransac
 # applied (there are no intervening writes to any of the items),
 # or until a (configurable-with-default) timeout is reached.
 wv.versioned_transact_write_items(
-    create_task_unless_exists,
+    create_and_link_task_unless_exists,
     attempts_iterator=wv.timed_retry(timedelta(seconds=22.3)
 )
 ```
@@ -105,3 +103,16 @@ wv.versioned_transact_write_items(
     )
 )
 ```
+
+### Unit testing!
+
+A big advantage to this approach, besides the readability of the code
+vs the standard `boto3` APIs, and the simplicity of knowing that you're
+never risking data loss with less sophisticated writes to your table,
+is that all of your business logic can be expressed directly in terms
+of interacting with the database, but you can fully unit test that behavior.
+
+See the
+[included example unit tests](../../../tests/xoto3/dynamodb/write_versioned_example_unit_test.py)
+for a working example of unit testing the above
+`create_and_link_task_unless_exists` function.

@@ -5,7 +5,11 @@ here) is not guaranteed to remain, so don't do that. Import this
 module and use only what it exposes.
 """
 from .api2 import ItemTable, TypedTable, create_or_update, update_existing, update_if_exists  # noqa
-from .errors import TableSchemaUnknownError, TransactionAttemptsOverrun  # noqa
+from .errors import (  # noqa
+    ItemNotYetFetchedError,
+    TableSchemaUnknownError,
+    TransactionAttemptsOverrun,
+)
 from .modify import delete, put  # noqa
 from .read import get, require  # noqa
 from .retry import timed_retry  # noqa
