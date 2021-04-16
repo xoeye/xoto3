@@ -8,7 +8,7 @@ from xoto3.dynamodb.exceptions import get_item_exception_type, raise_if_empty_ge
 from xoto3.dynamodb.types import Item, ItemKey
 
 from .ddb_api import table_name as _table_name
-from .errors import ItemNotFetchedException
+from .errors import ItemUndefinedException
 from .keys import hashable_key
 from .types import TableNameOrResource, VersionedTransaction
 
@@ -41,7 +41,7 @@ def get(
 
     """
     table_name = _table_name(table)
-    NotYetFetchedExc = get_item_exception_type(nicename, ItemNotFetchedException)
+    NotYetFetchedExc = get_item_exception_type(nicename, ItemUndefinedException)
     if table_name not in transaction.tables:
         raise NotYetFetchedExc("Table new to transaction", key=item_key, table_name=table_name)
 
@@ -80,6 +80,6 @@ def require(
             )
         assert item is not None
         return item
-    except ItemNotFetchedException as inf:
+    except ItemUndefinedException as inf:
         inf.force_immediate_fetch = True  # type: ignore
         raise inf

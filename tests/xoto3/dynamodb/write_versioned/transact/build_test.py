@@ -2,7 +2,7 @@ import pytest
 
 from xoto3.dynamodb.exceptions import ItemNotFoundException
 from xoto3.dynamodb.write_versioned import delete, get, put, require
-from xoto3.dynamodb.write_versioned.errors import ItemNotFetchedException, TableSchemaUnknownError
+from xoto3.dynamodb.write_versioned.errors import ItemUndefinedException, TableSchemaUnknownError
 from xoto3.dynamodb.write_versioned.keys import hashable_key, key_from_item
 from xoto3.dynamodb.write_versioned.prepare import items_and_keys_to_clean_table_data
 from xoto3.dynamodb.write_versioned.types import VersionedTransaction as VT
@@ -34,10 +34,10 @@ def test_get_and_require():
     with pytest.raises(ItemNotFoundException):
         require(vt, "table1", dict(id="no"))
 
-    with pytest.raises(ItemNotFetchedException):
+    with pytest.raises(ItemUndefinedException):
         get(vt, "table2", dict(id="1"),) == dict(id="1", val="a")
 
-    with pytest.raises(ItemNotFetchedException):
+    with pytest.raises(ItemUndefinedException):
         get(vt, "table1", dict(id="3"))
 
 
