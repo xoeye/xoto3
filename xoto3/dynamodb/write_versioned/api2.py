@@ -7,12 +7,17 @@ functionality, and may safely be ignored.
 from copy import deepcopy
 from typing import Callable, Generic, Optional, TypeVar, Union
 
+from .ddb_api import table_name
 from .modify import delete, put
 from .read import get, require
 from .specify import define_table, presume
-from .types import Item, ItemKey, TransactionBuilder, VersionedTransaction
+from .types import Item, ItemKey, TableNameOrResource, TransactionBuilder, VersionedTransaction
 
 T = TypeVar("T")
+
+Thunk = Callable[[], T]
+# a protocol for a simplified form of Lazy, a.k.a. a Thunk - the thing
+# that you do when you want to defer realizing a value until runtime.
 
 
 class TypedTable(Generic[T]):
@@ -45,7 +50,7 @@ class TypedTable(Generic[T]):
 
     def __init__(
         self,
-        table_name: Union[Callable[[], str], str],
+        table_name: Union[Thunk[TableNameOrResource], TableNameOrResource],
         type_deserializer: Callable[[Item], T],
         # from the database to your code - on the read path
         type_serializer: Callable[[T], Item],
@@ -57,13 +62,16 @@ class TypedTable(Generic[T]):
 
         Your type deserializer must implement a form of deep copy.
         """
-        if isinstance(table_name, str):
-            self.lazy_table_name = lambda: table_name
+        if not callable(table_name):
+            self.lazy_table = lambda: table_name
         else:
-            self.lazy_table_name = table_name
+            self.lazy_table = table_name
         self.item_name = item_name
         self.type_deserializer = type_deserializer
         self.type_serializer = type_serializer
+
+    def _lazy_table_name(self) -> str:
+        return table_name(self.lazy_table())
 
     def get(self, key: ItemKey) -> Callable[[VersionedTransaction], Optional[T]]:
         """Get an item from the database if it exists"""
@@ -72,22 +80,22 @@ class TypedTable(Generic[T]):
             return self.type_deserializer(item) if item else None
 
         return lambda vt: deser_opt(
-            get(vt, self.lazy_table_name(), key, copy=False, nicename=self.item_name)
+            get(vt, self._lazy_table_name(), key, copy=False, nicename=self.item_name)
         )
 
     def require(self, key: ItemKey) -> Callable[[VersionedTransaction], T]:
         """Return the item for this key, or raise an ItemNotFoundException if it does not"""
         return lambda vt: self.type_deserializer(
-            require(vt, self.lazy_table_name(), key, copy=False, nicename=self.item_name)
+            require(vt, self._lazy_table_name(), key, copy=False, nicename=self.item_name)
         )
 
     def put(self, typed_item: T) -> TransactionBuilder:
         return lambda vt: put(
-            vt, self.lazy_table_name(), self.type_serializer(typed_item), nicename=self.item_name
+            vt, self._lazy_table_name(), self.type_serializer(typed_item), nicename=self.item_name
         )
 
     def delete(self, key: ItemKey) -> TransactionBuilder:
-        return lambda vt: delete(vt, self.lazy_table_name(), key, nicename=self.item_name)
+        return lambda vt: delete(vt, self._lazy_table_name(), key, nicename=self.item_name)
 
     def presume(self, key: ItemKey, value: Optional[T]) -> TransactionBuilder:
         """'To assume as true in the absence of proof to the contrary.'
@@ -99,16 +107,19 @@ class TypedTable(Generic[T]):
         See further docs in .read.py.
         """
         return lambda vt: presume(
-            vt, self.lazy_table_name(), key, None if value is None else self.type_serializer(value),
+            vt,
+            self._lazy_table_name(),
+            key,
+            None if value is None else self.type_serializer(value),
         )
 
     def define(self, *key_attributes: str) -> TransactionBuilder:
         """Idempotent definition of key attributes for a table without any I/O"""
-        return lambda vt: define_table(vt, self.lazy_table_name(), *key_attributes)
+        return lambda vt: define_table(vt, self._lazy_table_name(), *key_attributes)
 
 
 def ItemTable(
-    table_name: Union[str, Callable[[], str]], item_name: str = "Item"
+    table_name: Union[Thunk[TableNameOrResource], TableNameOrResource], item_name: str = "Item"
 ) -> TypedTable[Item]:
     """This is just a workaround for the fact that mypy can't handle
     generics with default arguments, e.g. in the TypedTable
