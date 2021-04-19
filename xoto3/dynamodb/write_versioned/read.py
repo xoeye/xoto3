@@ -41,9 +41,9 @@ def get(
 
     """
     table_name = _table_name(table)
-    NotYetFetchedExc = get_item_exception_type(nicename, ItemUndefinedException)
+    UndefinedException = get_item_exception_type(nicename, ItemUndefinedException)
     if table_name not in transaction.tables:
-        raise NotYetFetchedExc("Table new to transaction", key=item_key, table_name=table_name)
+        raise UndefinedException("Table new to transaction", key=item_key, table_name=table_name)
 
     items, effects, _ = transaction.tables[table_name]
     item_hashable_key = hashable_key(item_key)
@@ -52,7 +52,7 @@ def get(
     if item_hashable_key in effects:
         return xf_result(effects[item_hashable_key])
     if item_hashable_key not in items:
-        raise NotYetFetchedExc(
+        raise UndefinedException(
             f"{nicename} not yet present in transaction", key=item_key, table_name=table_name
         )
 
