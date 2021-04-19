@@ -5,6 +5,7 @@ import pytest
 from xoto3.dynamodb.exceptions import ItemNotFoundException, get_item_exception_type
 from xoto3.dynamodb.get import (
     GetItem,
+    retry_notfound_consistent_read,
     strongly_consistent_get_item,
     strongly_consistent_get_item_if_exists,
 )
@@ -35,3 +36,53 @@ def test_get_exists(integration_test_id_table, integration_test_id_table_put):
     assert item == strongly_consistent_get_item_if_exists(
         integration_test_id_table, random_key, nicename="TestItem2"
     )
+
+
+def test_retry_get_with_consistent_read_if_it_exists():
+
+    the_item = dict(id="foo")
+
+    def _fake_get(**kw):
+        if not kw.get("ConsistentRead"):
+            raise ItemNotFoundException("ouch")
+        return the_item
+
+    test_get = retry_notfound_consistent_read(_fake_get)
+
+    assert test_get() == the_item
+
+
+def test_retry_get_with_consistent_read_if_it_does_not_exist():
+    calls = 0
+
+    def _fake_get(**kw):
+        nonlocal calls
+        calls += 1
+        if not kw.get("ConsistentRead"):
+            raise ItemNotFoundException("ouch")
+        raise ItemNotFoundException("definitely does not exist")
+
+    test_get = retry_notfound_consistent_read(_fake_get)
+
+    with pytest.raises(ItemNotFoundException):
+        test_get()
+
+    assert calls == 2
+
+
+def test_dont_retry_get_with_consistent_read_if_it_was_already_consistent():
+    calls = 0
+
+    def _fake_get(**kw):
+        nonlocal calls
+        calls += 1
+        if not kw.get("ConsistentRead"):
+            raise ItemNotFoundException("ouch")
+        raise ItemNotFoundException("definitely does not exist")
+
+    test_get = retry_notfound_consistent_read(_fake_get)
+
+    with pytest.raises(ItemNotFoundException):
+        test_get(ConsistentRead=True)
+
+    assert calls == 1

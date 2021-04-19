@@ -6,17 +6,17 @@ utility.
 Capital-letter arguments are SSM Parameter store arguments, whereas
 lowercase arguments are for our internal logic.
 """
-from typing import Union
-import re
+import json
 import os
 import os.path
-import json
+import re
 from datetime import datetime
-from typing_extensions import Literal
+from typing import Union
 
 from botocore.exceptions import ClientError
+from typing_extensions import Literal
 
-from xoto3.lazy_session import tlls
+from xoto3.lazy_session import tll_from_session
 
 ParameterType = Union[Literal["String"], Literal["SecureString"], Literal["StringList"]]
 
@@ -35,7 +35,7 @@ except Exception:  # pylint: disable=broad-except  # this is okay because gettin
     SCRIPT_NAME = "SSM Params"
 
 
-_SSM_CLIENT = tlls("client", "ssm")
+_SSM_CLIENT = tll_from_session(lambda sess: sess.client("ssm"))
 
 
 def delete(Name: str, ssm=None) -> bool:

@@ -2,7 +2,7 @@ from typing import Collection, Dict, Iterable, List, Mapping, Sequence, Set, Tup
 
 from xoto3.dynamodb.types import Item, ItemKey, KeyAttributeType
 
-from .keys import hashable_key, hashable_key_to_key, key_from_item
+from .keys import hashable_key, hashable_key_to_key, key_from_item, standard_key_attributes
 from .types import HashableItemKey, VersionedTransaction, _TableData
 
 
@@ -10,7 +10,7 @@ def _deduplicate_and_validate_keys(keys: Collection[ItemKey]) -> Iterable[ItemKe
     """All keys for a given table will need to be unique, and of course
     they must all share the same attribute names (or else they do not
     match the key schema for the table."""
-    seen = set()
+    seen: Set[tuple] = set()
     key_attributes: Set[KeyAttributeType] = set()
     for key in keys:
         tk = tuple(key.items())
@@ -56,13 +56,9 @@ def items_and_keys_to_clean_table_data(
     )
 
 
-def standard_key_attributes_from_key(item_key: ItemKey) -> Tuple[str, ...]:
-    return tuple(sorted(item_key.keys()))
-
-
 def _extract_key_attributes(item_keys: Sequence[ItemKey]) -> Tuple[str, ...]:
     assert item_keys, "You can't extract key_attributes without at least one item_key."
-    return standard_key_attributes_from_key(item_keys[0])
+    return standard_key_attributes(*item_keys[0].keys())
 
 
 D = TypeVar("D", bound=dict)

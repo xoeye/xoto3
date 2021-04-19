@@ -1,19 +1,18 @@
 """Utilities for BatchGets from DynamoDB"""
-import typing as ty
-from typing import Iterable, Tuple, Set, List
-import timeit
-from multiprocessing.dummy import Pool as ThreadPool
 import os
+import timeit
+import typing as ty
 from logging import getLogger
+from multiprocessing.dummy import Pool as ThreadPool
+from typing import Iterable, List, Set, Tuple
 
 from xoto3.backoff import backoff
-from xoto3.lazy_session import tlls
+from xoto3.dynamodb.types import TableResource
+from xoto3.lazy_session import tll_from_session
 from xoto3.utils.iter import grouper_it, peek
 from xoto3.utils.lazy import Lazy
-from xoto3.dynamodb.types import TableResource
 
-from .types import Item, KeyTuple, ItemKey, KeyAttributeType
-
+from .types import Item, ItemKey, KeyAttributeType, KeyTuple
 
 logger = getLogger(__name__)
 
@@ -23,7 +22,7 @@ __DEFAULT_THREADPOOL: Lazy[ty.Any] = Lazy(
     lambda: ThreadPool(_THREADPOOL_SIZE) if _THREADPOOL_SIZE else None
 )
 
-_DYNAMODB_RESOURCE = tlls("resource", "dynamodb")
+_DYNAMODB_RESOURCE = tll_from_session(lambda sess: sess.resource("dynamodb"))
 
 
 class KeyItemPair(ty.NamedTuple):

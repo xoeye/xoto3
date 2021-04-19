@@ -1,7 +1,7 @@
 import json
 import typing as ty
 
-import boto3
+from xoto3.lazy_session import tll_from_session
 
 
 def yield_record_bodies_from_sqs_event(event: dict) -> ty.Iterable:
@@ -10,7 +10,13 @@ def yield_record_bodies_from_sqs_event(event: dict) -> ty.Iterable:
 
 
 def yield_and_ack_sqs_messages(
-    queue_url: str, limit: int = 0, accept=None, *, WaitTimeSeconds: int = 1, **kwargs
+    queue_url: str,
+    limit: int = 0,
+    accept=None,
+    *,
+    WaitTimeSeconds: int = 1,
+    sqs_client=None,
+    **kwargs,
 ) -> ty.Iterable[dict]:
     """Generates messages from an SQS queue.
 
@@ -21,7 +27,7 @@ def yield_and_ack_sqs_messages(
     :param queue_url: URL of the SQS queue to drain.
 
     """
-    sqs_client = boto3.client("sqs")
+    sqs_client = sqs_client or tll_from_session(lambda s: s.client("sqs"))()
     recvd = 0
 
     while recvd < limit or limit == 0:

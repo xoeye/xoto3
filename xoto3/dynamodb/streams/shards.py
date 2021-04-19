@@ -1,12 +1,12 @@
 import typing as ty
+
 from typing_extensions import TypedDict
 
-import boto3
-
+from xoto3.lazy_session import tll_from_session
 from xoto3.paginate import (
-    yield_pages_from_operation,
     DYNAMODB_STREAMS_DESCRIBE_STREAM,
     DYNAMODB_STREAMS_GET_RECORDS,
+    yield_pages_from_operation,
 )
 
 
@@ -31,7 +31,7 @@ class ShardIterator(TypedDict):
 
 class StreamsClient:
     def __init__(self):
-        self.client = boto3.client("dynamodbstreams")
+        self.client = tll_from_session(lambda sess: sess.client("dynamodbstreams"))()
 
     def yield_shards(self, StreamArn: str) -> ty.Iterable[Shard]:
         """This is an expensive operation relatively speaking

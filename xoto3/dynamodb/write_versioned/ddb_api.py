@@ -4,7 +4,6 @@ from functools import partial
 from logging import getLogger
 from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, cast
 
-import boto3
 from botocore.exceptions import ClientError
 from typing_extensions import Protocol, TypedDict
 
@@ -12,6 +11,7 @@ from xoto3.dynamodb.types import Item
 from xoto3.dynamodb.utils.serde import serialize_item
 from xoto3.dynamodb.utils.table import table_primary_keys
 from xoto3.errors import client_error_name
+from xoto3.lazy_session import tll_from_session
 
 from .keys import hashable_key_to_key
 from .types import (
@@ -34,6 +34,10 @@ _RetryableTransactionCancelledErrorCodes = {
 }
 
 
+_DDB_RES = tll_from_session(lambda s: s.resource("dynamodb"))
+_DDB_CLIENT = tll_from_session(lambda s: s.client("dynamodb"))
+
+
 def table_name(table: TableNameOrResource) -> str:
     if not isinstance(table, str):
         return table.name
@@ -41,9 +45,25 @@ def table_name(table: TableNameOrResource) -> str:
 
 
 def known_key_schema(table: TableNameOrResource) -> Tuple[str, ...]:
+    """Note that this code may perform I/O, and may run during the
+    operation of your transaction builder.
+
+    Technically that is a side effect, and also this requires
+    permissions to read the key schema of your table using
+    DynamoDB::DescribeTable.
+
+    You can avoid ever having this happen just by making sure to
+    define the key schema of your table prior to performing a put or
+    delete, either via a get/require, or via the define_table
+    mechanism. In the vast majority of cases, you should not find
+    yourself in this situation, but if you do get an exception
+    bubbling up through here, that's what's going on, and you should
+    probably add a call to `define_table` at the beginning of your
+    transaction.
+    """
     try:
         if isinstance(table, str):
-            table = boto3.resource("dynamodb").Table(table)
+            table = _DDB_RES().Table(table)
         assert not isinstance(table, str)
         # your environment may or may not have permissions to read the key schema of its table.
         # in general, that is a nice permission to allow if possible.
@@ -82,8 +102,9 @@ def _ddb_batch_get_item(
         for table_name, item_keys in item_keys_by_table_name.items()
         if item_keys  # don't make empty request to a table
     }
-    results = defaultdict(list)
+    results: Dict[str, List[Item]] = defaultdict(list)
     while unprocessed_keys:
+        _log.debug(f"Performing batch_get of {len(unprocessed_keys)} keys")
         response = batch_get_item(RequestItems=unprocessed_keys)
         unprocessed_keys = response.get("UnprocessedKeys")  # type: ignore
         for table_name, items in response["Responses"].items():
@@ -113,14 +134,12 @@ def boto3_impl_defaults(
     batch_get_item: Optional[BatchGetItem] = None,
     transact_write_items: Optional[TransactWriteItems] = None,
 ) -> Tuple[BatchGetItem, TransactWriteItems]:
-    resource = None
     if not batch_get_item:
-        resource = boto3.resource("dynamodb")
-        batch_get_item = cast(BatchGetItem, partial(_ddb_batch_get_item, resource.batch_get_item))
+        batch_get_item = cast(BatchGetItem, partial(_ddb_batch_get_item, _DDB_RES().batch_get_item))
     assert batch_get_item
 
     if not transact_write_items:
-        transact_write_items = make_transact_multiple_but_optimize_single(boto3.client("dynamodb"))
+        transact_write_items = make_transact_multiple_but_optimize_single(_DDB_CLIENT())
     assert transact_write_items
 
     return (
@@ -233,6 +252,7 @@ def built_transaction_to_transact_write_items_args(
         def item_remains_unmodified(
             item_hashable_key: HashableItemKey, item: Optional[Item]
         ) -> dict:
+            """This will also check that the item still does not exist if it previously did not"""
             expression_ensuring_unmodifiedness = _serialize_versioned_expr(
                 versioned_item_expression(
                     get_existing_item(item_hashable_key).get(item_version_attribute, 0),

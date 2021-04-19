@@ -1,4 +1,6 @@
+from functools import wraps
 from logging import getLogger
+from typing import Callable, TypeVar, cast
 
 from .constants import DEFAULT_ITEM_NAME
 from .exceptions import ItemNotFoundException, raise_if_empty_getitem_response
@@ -43,3 +45,22 @@ def strongly_consistent_get_item_if_exists(
         return strongly_consistent_get_item(table, key, nicename=nicename)
     except ItemNotFoundException:
         return dict()
+
+
+F = TypeVar("F", bound=Callable)
+
+
+def retry_notfound_consistent_read(get_item: F) -> F:
+    @wraps(get_item)
+    def get_with_consistent_read_retry(*args, **kwargs):
+        try:
+            return get_item(*args, **kwargs)
+        except ItemNotFoundException:
+            con_read = kwargs.get("ConsistentRead")
+            if con_read:
+                # we already did a consistent read
+                raise
+            logger.info("Retrying with a consistent read")
+            return get_item(*args, **dict(kwargs, ConsistentRead=True))
+
+    return cast(F, get_with_consistent_read_retry)
