@@ -45,6 +45,22 @@ def table_name(table: TableNameOrResource) -> str:
 
 
 def known_key_schema(table: TableNameOrResource) -> Tuple[str, ...]:
+    """Note that this code may perform I/O, and may run during the
+    operation of your transaction builder.
+
+    Technically that is a side effect, and also this requires
+    permissions to read the key schema of your table using
+    DynamoDB::DescribeTable.
+
+    You can avoid ever having this happen just by making sure to
+    define the key schema of your table prior to performing a put or
+    delete, either via a get/require, or via the define_table
+    mechanism. In the vast majority of cases, you should not find
+    yourself in this situation, but if you do get an exception
+    bubbling up through here, that's what's going on, and you should
+    probably add a call to `define_table` at the beginning of your
+    transaction.
+    """
     try:
         if isinstance(table, str):
             table = _DDB_RES().Table(table)
@@ -86,8 +102,9 @@ def _ddb_batch_get_item(
         for table_name, item_keys in item_keys_by_table_name.items()
         if item_keys  # don't make empty request to a table
     }
-    results = defaultdict(list)
+    results: Dict[str, List[Item]] = defaultdict(list)
     while unprocessed_keys:
+        _log.debug(f"Performing batch_get of {len(unprocessed_keys)} keys")
         response = batch_get_item(RequestItems=unprocessed_keys)
         unprocessed_keys = response.get("UnprocessedKeys")  # type: ignore
         for table_name, items in response["Responses"].items():
@@ -235,6 +252,7 @@ def built_transaction_to_transact_write_items_args(
         def item_remains_unmodified(
             item_hashable_key: HashableItemKey, item: Optional[Item]
         ) -> dict:
+            """This will also check that the item still does not exist if it previously did not"""
             expression_ensuring_unmodifiedness = _serialize_versioned_expr(
                 versioned_item_expression(
                     get_existing_item(item_hashable_key).get(item_version_attribute, 0),

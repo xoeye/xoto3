@@ -80,25 +80,30 @@ refetching, and eventually giving up to the utility.
 ```python
 import xoto3.dynamodb.write_versioned as wv
 
+user_table = wv.ItemTable('User')
+group_table = wv.ItemTable('Group')
+# ^ the above are convenience APIs and are pure utilities; they perform no
+# IO and contain no mutable state or clients.
+
 user_key = dict(id="bob")
 group_key = dict(pk="team42")
 
+
 def add_user_to_new_or_existing_group(t: wv.VersionedTransaction) -> wv.VersionedTransaction:
-    user = wv.require(t, "User", user_key)
+    user = user_table.require(user_key)(t)
     assert user, "require will raise ItemNotFoundException if the item does not exist"
-    group = wv.get(t, "Group", group_key)
+    group = group_table.get(group_key)(t)
 
     if group_key not in user["groups"]:
         user["groups"].append(group_key)
-        t = wv.put(t, "User", user)
+        t = user_table.put(user)(t)
 
-    if group:
-        if user_key not in group["members"]:
-            group["members"].append(user_key)
-    else:
-        group = dict(group_key, members=[user_key])
+    if not group:
+        group = dict(group_key, members=list())
+    if user_key not in group["members"]:
+        group["members"].append(user_key)
 
-    if group != wv.get(t, "Group", group_key):
+    if group != group_table.get(group_key):
         # if there was a change to the group
         t = wv.put(t, "Group", group)
     return t
@@ -116,3 +121,5 @@ The above code will ensure that the 'state' of the collection of items
 as defined by your function is fully realized without intervening
 transactions, or retried with the new state of those items if the
 transaction is beaten or otherwise interfered with.
+
+For further documentation on this utility, see the full [readme](./write_versioned/README.md)

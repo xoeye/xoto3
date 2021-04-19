@@ -1,4 +1,4 @@
-"""Defines the API for modifying an existing transaction. """
+"""Defines the API for adding write effects to a transaction."""
 
 from typing import NamedTuple, Optional, Union
 
@@ -10,8 +10,7 @@ from xoto3.utils.tree_map import SimpleTransform
 from .ddb_api import known_key_schema
 from .ddb_api import table_name as _table_name
 from .errors import TableSchemaUnknownError
-from .keys import hashable_key, key_from_item
-from .prepare import standard_key_attributes_from_key
+from .keys import hashable_key, key_from_item, standard_key_attributes
 from .types import TableNameOrResource, VersionedTransaction, _TableData
 
 
@@ -33,14 +32,7 @@ def _write(
     *,
     nicename: str = DEFAULT_ITEM_NAME,
 ) -> VersionedTransaction:
-    """Shared put/delete implementation - not meant for direct use at this time.
-
-    Performs an optimistic put - if the item is not known to the
-    existing transaction, assumes you mean to create it if and only if
-    it does not exist. If the item turns out to exist already, your
-    transaction will be re-run, at which point a put will be interpreted as a
-    'witting' choice to overwrite the known item.
-    """
+    """Shared put/delete implementation - not meant for direct use at this time."""
 
     table_name = _table_name(table)
 
@@ -63,7 +55,7 @@ def _write(
                         "Specify this delete in terms of the key only and this should work fine."
                     )
                 # at this point this is a best guess
-                key_attributes = standard_key_attributes_from_key(put_or_delete.item_key)
+                key_attributes = standard_key_attributes(*put_or_delete.item_key.keys())
             else:
                 # it's a put - we can't make this work at all
                 raise TableSchemaUnknownError(
@@ -100,7 +92,14 @@ def put(
     nicename: str = DEFAULT_ITEM_NAME,
     prewrite_transform: Optional[SimpleTransform] = None,
 ) -> VersionedTransaction:
-    """Returns a modified transaction including the requested PutItem operation"""
+    """Returns a modified transaction including the requested PutItem operation
+
+    Performs an optimistic put - if the item is not known to the
+    existing transaction, assumes you mean to create it if and only if
+    it does not exist. If the item turns out to exist already, your
+    transaction will be re-run, at which point a put will be interpreted as a
+    'witting' choice to overwrite the known item.
+    """
     return _write(
         transaction, table, Put(dynamodb_prewrite(item, prewrite_transform)), nicename=nicename
     )
