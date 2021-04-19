@@ -1,4 +1,4 @@
-## 1.12
+## 1.12.0
 
 An enhanced API supporting the use of
 `dynamodb.write_versioned.versioned_transact_write_items`, which is a
