@@ -1,3 +1,7 @@
+## 1.12.1
+
+Update `all_items_for_next_attempt` to be able to handle multiple tables with different key schemas
+
 ## 1.12.0
 
 An enhanced API supporting the use of
