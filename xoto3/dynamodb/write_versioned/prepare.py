@@ -106,8 +106,12 @@ def all_items_for_next_attempt(
     table_name_onto_hashable_keys: Dict[str, Set[HashableItemKey]] = {
         table_name: set() for table_name in failed_transaction.tables
     }
-    for (table_name, table_data,) in failed_transaction.tables.items():
+    table_name_onto_key_attributes: Dict[str, Sequence[str]] = {
+        table_name: [] for table_name in failed_transaction.tables
+    }
+    for (table_name, table_data) in failed_transaction.tables.items():
         items, effects, key_attributes = table_data
+        table_name_onto_key_attributes[table_name] = key_attributes
         for hashable_item_key in items.keys():
             table_name_onto_hashable_keys[table_name].add(hashable_item_key)
         for hashable_item_key in effects.keys():
@@ -115,7 +119,8 @@ def all_items_for_next_attempt(
 
     return {
         table_name: [
-            hashable_key_to_key(key_attributes, hashable_key) for hashable_key in hashable_keys
+            hashable_key_to_key(table_name_onto_key_attributes[table_name], hashable_key)
+            for hashable_key in hashable_keys
         ]
         for table_name, hashable_keys in table_name_onto_hashable_keys.items()
     }
