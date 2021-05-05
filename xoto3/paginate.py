@@ -23,11 +23,20 @@ def set_at_path(path, d, val):
     d[path[-1]] = val
 
 
+class PagePathsTemplate(ty.NamedTuple):
+    """Not necessary - just a template for defining paginators"""
+
+    exclusive_start_path: KeyPath
+    last_evaluated_path: KeyPath
+    limit_path: KeyPath
+    items_path: KeyPath
+
+
 def yield_pages_from_operation(
     exclusive_start_path: KeyPath,
     last_evaluated_path: KeyPath,
-    limit_path: ty.Tuple[str, ...],
-    items_path: ty.Tuple[str, ...],
+    limit_path: KeyPath,
+    items_path: KeyPath,
     # whether or not limiting _happens_ is controlled by whether you set a limit in your request dict
     # but if you provide limit_path you must provide items_path and vice-versa,
     # or we won't be able figure out how to create the new limit for each paged request.
@@ -88,6 +97,11 @@ def yield_pages_from_operation(
     specific operation), so that you can then invoke the same
     operation paginator repeatedly with different requests.
 
+    If you're interested in the actual value of the LastEvaluated
+    token (or its equivalent), you may pass in a callback which we
+    will call before every page that we yield. Thus, your code will
+    have the opportunity to examine the current token before
+    re-entering this generator.
     """
     assert all((limit_path, items_path)) or not any((limit_path, items_path))
     request = deepcopy(request)
@@ -116,15 +130,17 @@ def yield_pages_from_operation(
         if limit:
             set_limit(request, limit)
         page_response = operation(**request)
+        last_evaluated = get_le(page_response)
+        if last_evaluated_callback:
+            # we call your callback for every page, not just the last one.
+            last_evaluated_callback(last_evaluated)
         yield page_response  # we yield the entire response
-        ExclusiveStart = get_le(page_response) or None
+        ExclusiveStart = last_evaluated or None
         if starting_limit:
             # a limit was requested
             limit = limit - len(get_items(page_response))
             if limit <= 0:
-                # we're done; before we leave, provide last evaluated if requested
-                if last_evaluated_callback:
-                    last_evaluated_callback(ExclusiveStart)
+                # we're done
                 ExclusiveStart = None
 
 

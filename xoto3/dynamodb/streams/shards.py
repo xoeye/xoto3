@@ -59,7 +59,7 @@ def get_stream_arn_for_table(table_name: str, streams) -> str:
     return list(filter(lambda s: s["TableName"] == table_name, streams))[0]["StreamArn"]
 
 
-def yield_shards(client, StreamArn: str) -> ty.Iterable[Shard]:
+def yield_shards(client, StreamArn: str) -> ty.Iterator[Shard]:
     page_yielder = yield_pages_from_operation(
         *DYNAMODB_STREAMS_DESCRIBE_STREAM, client.describe_stream, dict(StreamArn=StreamArn)
     )
@@ -79,7 +79,7 @@ def shard_iterator_from_shard(
     )
 
 
-def yield_records_from_shard_iterator(client, shard_iterator: ShardIterator) -> ty.Iterable[dict]:
+def yield_records_from_shard_iterator(client, shard_iterator: ShardIterator) -> ty.Iterator[dict]:
     yielder = yield_pages_from_operation(
         *DYNAMODB_STREAMS_GET_RECORDS,
         client.get_records,
@@ -93,7 +93,7 @@ def is_shard_live(shard: Shard) -> bool:
     return "EndingSequenceNumber" not in shard["SequenceNumberRange"]
 
 
-def only_live_shards(shards: ty.Iterable[Shard]) -> ty.Iterable[Shard]:
+def only_live_shards(shards: ty.Iterable[Shard]) -> ty.Iterator[Shard]:
     for shard in shards:
         if is_shard_live(shard):
             yield shard
@@ -107,7 +107,7 @@ def key_shards(shards: ty.List[Shard]) -> ty.Dict[str, Shard]:
     return {key_shard(shard): shard for shard in shards}
 
 
-def live_shard_chains(shards: ty.List[Shard]) -> ty.Iterable[ty.List[Shard]]:
+def live_shard_chains(shards: ty.List[Shard]) -> ty.Iterator[ty.List[Shard]]:
     shards_by_key = key_shards(shards)
     live_shards = only_live_shards(shards)
     for live_shard in live_shards:
