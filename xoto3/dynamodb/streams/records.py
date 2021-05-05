@@ -4,7 +4,7 @@ from logging import getLogger
 
 from typing_extensions import Literal
 
-from xoto3.dynamodb.types import Item
+from xoto3.dynamodb.types import Item, ItemKey
 from xoto3.dynamodb.utils.serde import deserialize_item
 
 logger = getLogger(__name__)
@@ -72,3 +72,20 @@ def old_and_new_dict_tuples_from_stream(event: dict) -> ty.List[ItemImages]:
     tuples = [old_and_new_items_from_stream_event_record(record) for record in event["Records"]]
     logger.debug(f"Extracted {len(tuples)} stream records from the event.")
     return tuples
+
+
+def matches_key(item_key: ItemKey) -> ty.Callable[[ItemImages], bool]:
+    if not item_key:
+        raise ValueError("Empty item key")
+
+    def _matches_key(images: ItemImages) -> bool:
+        """a filter function"""
+        old, new = images
+        for k, kv in item_key.items():
+            if old and not old.get(k) == kv:
+                return False
+            if new and not new.get(k) == kv:
+                return False
+        return True
+
+    return _matches_key
