@@ -29,12 +29,6 @@ ItemImages = ty.Union[ItemCreated, ItemModified, ItemDeleted]
 ExistingItemImages = ty.Union[ItemCreated, ItemModified]  # a common alias
 
 
-def filter_existing(images_iter: ty.Iterable[ItemImages]) -> ty.Iterator[ExistingItemImages]:
-    for item_images in images_iter:
-        if item_images.new:
-            yield item_images
-
-
 def ddb_images(old: ty.Optional[Item], new: ty.Optional[Item]) -> ItemImages:
     if not old:
         assert new, "If old is not present then this should be a newly created item"
@@ -68,10 +62,10 @@ def old_and_new_items_from_stream_event_record(event_record: dict) -> ItemImages
 
 
 def old_and_new_dict_tuples_from_stream(event: dict) -> ty.List[ItemImages]:
-    """Utility wrapper for old_and_new_items_from_stream_event_record"""
-    tuples = [old_and_new_items_from_stream_event_record(record) for record in event["Records"]]
-    logger.debug(f"Extracted {len(tuples)} stream records from the event.")
-    return tuples
+    """Logging wrapper for a whole stream event. You probably don't want to use this."""
+    images = [old_and_new_items_from_stream_event_record(record) for record in event["Records"]]
+    logger.debug(f"Extracted {len(images)} stream records from the stream event.")
+    return images
 
 
 def matches_key(item_key: ItemKey) -> ty.Callable[[ItemImages], bool]:
@@ -89,3 +83,25 @@ def matches_key(item_key: ItemKey) -> ty.Callable[[ItemImages], bool]:
         return True
 
     return _matches_key
+
+
+def filter_existing(images_iter: ty.Iterable[ItemImages]) -> ty.Iterator[ExistingItemImages]:
+    for item_images in images_iter:
+        if item_images.new:
+            yield item_images
+
+
+def current_nonempty_value(
+    item_key: ItemKey,
+) -> ty.Callable[[ty.Iterable[ItemImages]], ty.Iterator[Item]]:
+    """We're only interested in a stream of the current values for a
+    particular item, and we're not interested in deletions.
+    """
+    item_matcher = matches_key(item_key)
+
+    def item_only_if_it_exists(images_stream: ty.Iterable[ItemImages]) -> ty.Iterator[Item]:
+        for existing_item_images in filter_existing(images_stream):
+            if item_matcher(existing_item_images):
+                yield existing_item_images.new
+
+    return item_only_if_it_exists

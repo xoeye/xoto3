@@ -36,13 +36,13 @@ class StreamFunnelMulticast(ty.Generic[E]):
     """
 
     def __init__(
-        self, start_stream: ty.Callable[[str, StreamEventFunnel], Cleanup],
+        self, start_stream: ty.Callable[[ty.Hashable, StreamEventFunnel], Cleanup],
     ):
         self.lock = threading.Lock()
         self.start_stream = start_stream
-        self.streams: ty.Dict[str, _SharedStream] = dict()
+        self.streams: ty.Dict[ty.Hashable, _SharedStream] = dict()
 
-    def _recv_event_for_stream(self, stream_key: str, stream_event: E):
+    def _recv_event_for_stream(self, stream_key: ty.Hashable, stream_event: E):
         ss = self.streams.get(stream_key)
         if not ss:
             # no current consumers
@@ -50,33 +50,39 @@ class StreamFunnelMulticast(ty.Generic[E]):
         for q in list(ss.queues.values()):
             q.put(stream_event)
 
-    def __call__(self, stream_key: str) -> ty.ContextManager[QueuePollIterable[E]]:
-        """Provides a context manager for the underlying shared stream funnel."""
-        the_lock = self.lock
-        with the_lock:
-            if stream_key not in self.streams:
-                # create a single shared stream
-                cleanup = self.start_stream(
-                    stream_key, partial(self._recv_event_for_stream, stream_key)
-                )
-                self.streams[stream_key] = _SharedStream(dict(), cleanup)
+    def __call__(self, stream_key: ty.Hashable) -> ty.ContextManager[QueuePollIterable[E]]:
+        """Constructs a context manager that will provide access to the
+        underlying shared stream funnel.
 
-            ss = self.streams[stream_key]
-            q: queue.Queue = queue.Queue()
-            ss.queues[id(q)] = q
+        This context manager is inactive until entered using `with` -
+        i.e no stream exists or is subscribed.
+        """
 
-            @contextlib.contextmanager
-            def queue_poll_context(q: queue.Queue) -> ty.Iterator[QueuePollIterable[E]]:
-                yield QueuePollIterable(q)
-                with the_lock:
-                    # clean up the consumer
-                    ss.queues.pop(id(q))
-                    if not ss.queues:
-                        # remove the stream consumer if no one is listening
-                        ss.cleanup()
-                        self.streams.pop(stream_key)
+        @contextlib.contextmanager
+        def queue_poll_context() -> ty.Iterator[QueuePollIterable[E]]:
+            with self.lock:
+                if stream_key not in self.streams:
+                    # create a single shared stream
+                    cleanup = self.start_stream(
+                        stream_key, partial(self._recv_event_for_stream, stream_key)
+                    )
+                    self.streams[stream_key] = _SharedStream(dict(), cleanup)
 
-            return queue_poll_context(q)
+                ss = self.streams[stream_key]
+                q: queue.Queue = queue.Queue()
+                ss.queues[id(q)] = q
+
+            yield QueuePollIterable(q)
+
+            with self.lock:
+                # clean up the consumer
+                ss.queues.pop(id(q))
+                if not ss.queues:
+                    # remove the stream consumer if no one is listening
+                    ss.cleanup()
+                    self.streams.pop(stream_key)
+
+        return queue_poll_context()
 
 
 Shard = ty.TypeVar("Shard")
