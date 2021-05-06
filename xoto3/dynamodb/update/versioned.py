@@ -22,10 +22,7 @@ from xoto3.dynamodb.get import (
     strongly_consistent_get_item_if_exists,
 )
 from xoto3.dynamodb.types import AttrDict, Item, ItemKey, TableResource
-from xoto3.dynamodb.write_versioned.ddb_api import (
-    is_cancelled_and_retryable,
-    versioned_item_expression,
-)
+from xoto3.dynamodb.utils.expressions import versioned_item_expression
 from xoto3.utils.dt import iso8601strict
 from xoto3.utils.tree_map import SimpleTransform
 
@@ -35,6 +32,7 @@ from .diff import (
     build_update_diff,
     select_attributes_for_set_and_remove,
 )
+from .retry import is_conditional_update_retryable
 
 DEFAULT_MAX_ATTEMPTS_BEFORE_FAILURE = 25
 # this number is somewhat arbitrary, but infinite loops are very bad
@@ -160,7 +158,7 @@ def versioned_diffed_update_item(
             update_item(table, item_key, **update_arguments, **expr)
             return updated_item
         except ClientError as ce:
-            if is_cancelled_and_retryable(ce):
+            if is_conditional_update_retryable(ce):
                 msg = (
                     "Attempt %d to update %s in table %s was beaten "
                     + "by a different update. Sleeping for %s seconds."

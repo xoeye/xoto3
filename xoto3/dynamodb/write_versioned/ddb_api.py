@@ -8,6 +8,8 @@ from botocore.exceptions import ClientError
 from typing_extensions import Protocol, TypedDict
 
 from xoto3.dynamodb.types import Item
+from xoto3.dynamodb.update.retry import is_conditional_update_retryable
+from xoto3.dynamodb.utils.expressions import versioned_item_expression
 from xoto3.dynamodb.utils.serde import serialize_item
 from xoto3.dynamodb.utils.table import table_primary_keys
 from xoto3.errors import client_error_name
@@ -78,11 +80,22 @@ def _collect_codes(resp: dict) -> Set[str]:
     return cc
 
 
-def is_cancelled_and_retryable(ce: ClientError) -> bool:
+_KNOWN_RETRYABLE_TRANSACTION_ERRORS = (
+    "TransactionCanceledException",
+    "TransactionInProgressException",
+)
+
+
+def _is_transaction_failed_and_retryable(ce: ClientError) -> bool:
+    error_name = client_error_name(ce)
     return (
-        client_error_name(ce) in ("TransactionCanceledException", "ConditionalCheckFailedException")
+        error_name == "TransactionCanceledException"
         and _collect_codes(ce.response) <= _RetryableTransactionCancelledErrorCodes
-    )
+    ) or error_name == "TransactionInProgressException"
+
+
+def is_cancelled_and_retryable(ce: ClientError) -> bool:
+    return is_conditional_update_retryable(ce) or _is_transaction_failed_and_retryable(ce)
 
 
 class BatchGetResponse(TypedDict):
@@ -150,36 +163,6 @@ def boto3_impl_defaults(
 
 def _serialize_versioned_expr(expr: dict) -> dict:
     return dict(expr, ExpressionAttributeValues=serialize_item(expr["ExpressionAttributeValues"]))
-
-
-# this could be used in a put_item scenario as well, or even with a batch_writer
-def versioned_item_expression(
-    item_version: int, item_version_key: str = "item_version", id_that_exists: str = ""
-) -> dict:
-    """Assembles a DynamoDB ConditionExpression with ExprAttrNames and
-    Values that will ensure that you are the only caller of
-    versioned_item_diffed_update that has updated this item.
-
-    In general it would be a silly thing to not pass id_that_exists if
-    your item_version is not also 0.  However, since this is just a
-    helper function and is only used (currently) by the local consumer
-    versioned_item_diffed_update, there is no need to enforce this.
-
-    """
-    expr_names = {"#itemVersion": item_version_key}
-    expr_vals = {":curItemVersion": item_version}
-    item_version_condition = "#itemVersion = :curItemVersion"
-    first_time_version_condition = "attribute_not_exists(#itemVersion)"
-    if id_that_exists:
-        expr_names["#idThatExists"] = id_that_exists
-        first_time_version_condition = (
-            f"( {first_time_version_condition} AND attribute_exists(#idThatExists) )"
-        )
-    return dict(
-        ExpressionAttributeNames=expr_names,
-        ExpressionAttributeValues=expr_vals,
-        ConditionExpression=item_version_condition + " OR " + first_time_version_condition,
-    )
 
 
 def built_transaction_to_transact_write_items_args(

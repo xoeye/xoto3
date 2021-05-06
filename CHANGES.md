@@ -1,4 +1,8 @@
-## 1.12.1
+### 1.12.2
+
+Cover more exception types in retries for DynamoDB transaction utilities.
+
+### 1.12.1
 
 Update `all_items_for_next_attempt` to be able to handle multiple tables with different key schemas
 
