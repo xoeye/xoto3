@@ -28,13 +28,6 @@ from .types import (
 
 _log = getLogger(__name__)
 
-_RetryableTransactionCancelledErrorCodes = {
-    "ConditionalCheckFailed",
-    "TransactionConflict",
-    "ThrottlingError",
-    "ProvisionedThroughputExceeded",
-}
-
 
 _DDB_RES = tll_from_session(lambda s: s.resource("dynamodb"))
 _DDB_CLIENT = tll_from_session(lambda s: s.client("dynamodb"))
@@ -80,18 +73,21 @@ def _collect_codes(resp: dict) -> Set[str]:
     return cc
 
 
-_KNOWN_RETRYABLE_TRANSACTION_ERRORS = (
-    "TransactionCanceledException",
-    "TransactionInProgressException",
-)
+_RetryableTransactionCancelledErrorCodes = {
+    "ConditionalCheckFailed",
+    "TransactionConflict",
+    "ThrottlingError",
+    "ProvisionedThroughputExceeded",
+}
 
 
 def _is_transaction_failed_and_retryable(ce: ClientError) -> bool:
     error_name = client_error_name(ce)
-    return (
-        error_name == "TransactionCanceledException"
-        and _collect_codes(ce.response) <= _RetryableTransactionCancelledErrorCodes
-    ) or error_name == "TransactionInProgressException"
+    if error_name == "TransactionInProgressException":
+        return True
+    if error_name == "TransactionCanceledException":
+        return _collect_codes(ce.response) <= _RetryableTransactionCancelledErrorCodes
+    return False
 
 
 def is_cancelled_and_retryable(ce: ClientError) -> bool:
