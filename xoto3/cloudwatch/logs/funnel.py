@@ -2,7 +2,7 @@ import threading
 import typing as ty
 from datetime import datetime, timezone
 
-from xoto3.stream import Cleanup
+from xoto3.multicast import Cleanup
 
 from .events import LogEvent, yield_filtered_log_events
 

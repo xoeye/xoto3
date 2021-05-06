@@ -7,9 +7,9 @@ from functools import partial
 import boto3
 
 from xoto3.cloudwatch.logs import funnel_latest_from_log_group
-from xoto3.stream import StreamFunnelMulticast
+from xoto3.multicast import LazyMulticast
 
-CLOUDWATCH_LOGS = StreamFunnelMulticast(partial(funnel_latest_from_log_group, boto3.client("logs")))  # type: ignore
+CLOUDWATCH_LOGS = LazyMulticast(partial(funnel_latest_from_log_group, boto3.client("logs")))
 
 
 def write_log_events_to_file(log_group_name: str, filename: str):

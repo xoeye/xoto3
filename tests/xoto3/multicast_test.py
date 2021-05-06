@@ -3,10 +3,10 @@ import time
 import typing as ty
 from collections import defaultdict
 
-from xoto3.stream import StreamFunnelMulticast
+from xoto3.multicast import LazyMulticast
 
 
-def test_stream_funnel_multicast():
+def test_lazy_multicast():
     class Recvr(ty.NamedTuple):
         nums: ty.List[int]
 
@@ -26,7 +26,7 @@ def test_stream_funnel_multicast():
         t.start()
         return t.join
 
-    mc = StreamFunnelMulticast(start_numbers_stream)  # type: ignore
+    mc = LazyMulticast(start_numbers_stream)  # type: ignore
 
     consumer_results = defaultdict(list)
 

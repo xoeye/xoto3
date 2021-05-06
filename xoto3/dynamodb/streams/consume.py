@@ -2,12 +2,8 @@ import typing as ty
 
 import boto3
 
-from xoto3.stream import (
-    ShardedStreamFunnelController,
-    StreamEventFunnel,
-    StreamFunnelMulticast,
-    funnel_sharded_stream,
-)
+from xoto3.multicast import LazyMulticast, OnNext
+from xoto3.stream import ShardedStreamFunnelController, funnel_sharded_stream
 
 from .records import ItemImages, old_and_new_items_from_stream_event_record
 from .shards import (
@@ -39,18 +35,18 @@ def process_latest_from_stream(
 
 def make_dynamodb_stream_images_multicast(
     shard_refresh_interval: float = 2.0,
-) -> StreamFunnelMulticast[ItemImages]:
+) -> LazyMulticast[str, ItemImages]:
     """A slightly cleaner interface to process_latest_from_stream,
     particularly if you want to be able to share the output across
     multiple consumers.
     """
 
     def start_dynamodb_stream(
-        table_name: str, stream_event_callback: StreamEventFunnel[ItemImages]
-    ) -> ty.Callable[[], ty.Any]:
+        table_name: str, stream_event_callback: OnNext[ItemImages]
+    ) -> ty.Callable[[], None]:
         session = boto3.session.Session()
         table = session.resource("dynamodb").Table(table_name)
-        thread, kill = process_latest_from_stream(
+        thread, kill = process_latest_from_stream(  # pylint: disable=unpacking-non-sequence
             session.client("dynamodbstreams"),
             table.latest_stream_arn,  # type: ignore
             lambda record_dict: stream_event_callback(
@@ -65,4 +61,4 @@ def make_dynamodb_stream_images_multicast(
 
         return cleanup_ddb_stream
 
-    return StreamFunnelMulticast(start_dynamodb_stream)
+    return LazyMulticast(start_dynamodb_stream)
