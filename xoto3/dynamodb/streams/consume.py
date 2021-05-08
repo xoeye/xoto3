@@ -2,8 +2,8 @@ import typing as ty
 
 import boto3
 
-from xoto3.multicast import LazyMulticast, OnNext
-from xoto3.stream import ShardedStreamFunnelController, funnel_sharded_stream
+from xoto3.utils.multicast import LazyMulticast, OnNext
+from xoto3.utils.stream import ShardedStreamFunnelController, funnel_sharded_stream
 
 from .records import ItemImages, old_and_new_items_from_stream_event_record
 from .shards import (

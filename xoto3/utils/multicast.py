@@ -4,7 +4,7 @@ import threading
 import typing as ty
 from functools import partial
 
-from xoto3.utils.poll import QueuePollIterable
+from .poll import QueuePollIterable
 
 
 class _Producer(ty.NamedTuple):

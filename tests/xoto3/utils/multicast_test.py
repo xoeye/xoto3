@@ -3,7 +3,7 @@ import time
 import typing as ty
 from collections import defaultdict
 
-from xoto3.multicast import LazyMulticast
+from xoto3.utils.multicast import LazyMulticast
 
 
 def test_lazy_multicast():
