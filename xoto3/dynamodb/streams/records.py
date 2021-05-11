@@ -29,7 +29,7 @@ ItemImages = ty.Union[ItemCreated, ItemModified, ItemDeleted]
 ExistingItemImages = ty.Union[ItemCreated, ItemModified]  # a common alias
 
 
-def ddb_images(old: ty.Optional[Item], new: ty.Optional[Item]) -> ItemImages:
+def item_images(old: ty.Optional[Item], new: ty.Optional[Item]) -> ItemImages:
     if not old:
         assert new, "If old is not present then this should be a newly created item"
         return ItemCreated(None, new)
@@ -43,7 +43,7 @@ def old_and_new_items_from_stream_record_body(stream_record_body: dict) -> ItemI
     """If you're using the `records` wrapper this will get you what you need."""
     new = deserialize_item(stream_record_body.get("NewImage", {}))
     old = deserialize_item(stream_record_body.get("OldImage", {}))
-    return ddb_images(old, new)
+    return item_images(old, new)
 
 
 def old_and_new_items_from_stream_event_record(event_record: dict) -> ItemImages:
