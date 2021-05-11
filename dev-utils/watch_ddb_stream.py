@@ -8,16 +8,17 @@ from typing import Callable
 
 import boto3
 
-from xoto3.dynamodb.streams.consume import process_latest_from_stream
-from xoto3.dynamodb.streams.records import old_and_new_items_from_stream_event_record
+from xoto3.dynamodb.streams.consume import ItemImages, make_dynamodb_stream_images_multicast
 from xoto3.dynamodb.utils.index import hash_key_name, range_key_name
 
+DYNAMODB_STREAMS = make_dynamodb_stream_images_multicast()
 
-def make_accept_stream_item_for_table(item_slicer: Callable[[dict], str]):
-    def accept_stream_item(record: dict):
-        old, new = old_and_new_items_from_stream_event_record(record)
+
+def make_accept_stream_images(item_slicer: Callable[[dict], str]):
+    def accept_stream_item(images: ItemImages):
+        old, new = images
         if not old:
-            print(f"New item: {item_slicer(new)}")
+            print(f"New item: {item_slicer(new)}")  # type: ignore
         elif not new:
             print(f"Deleted item {item_slicer(old)}")
         else:
@@ -53,8 +54,6 @@ def main():
 
     DDB_RES = boto3.resource("dynamodb")
 
-    DDB_STREAMS_CLIENT = boto3.client("dynamodbstreams")
-
     table = DDB_RES.Table(args.table_name)
 
     if args.attribute_names:
@@ -74,14 +73,12 @@ def main():
         item_slicer = make_key_slicer(table)
 
     try:
-        t, _kill = process_latest_from_stream(
-            DDB_STREAMS_CLIENT,
-            table.latest_stream_arn,
-            make_accept_stream_item_for_table(item_slicer),
-        )
-        t.join()
+        accept_stream_images = make_accept_stream_images(item_slicer)
+        with DYNAMODB_STREAMS(args.table_name) as table_stream:
+            for images in table_stream:
+                accept_stream_images(images)
     except KeyboardInterrupt:
-        pass
+        pass  # no noisy log - Ctrl-C for clean exit
 
 
 if __name__ == "__main__":

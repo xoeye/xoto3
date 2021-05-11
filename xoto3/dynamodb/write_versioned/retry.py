@@ -36,10 +36,6 @@ def timed_retry(
     while attempt == 0 or time.monotonic() <= expiring_at:
         attempt += 1
         yield  # make an attempt
-        msg = (
-            "Attempt %d to perform transaction was beaten "
-            + "by a different attempt. Sleeping for %s seconds."
-        )
         sleep = _choose_sleep_len_to_average_N_attempts_in_the_total_interval(
             max_attempts_before_expiration,
             random_sleep_length,
@@ -50,6 +46,7 @@ def timed_retry(
             # we've exceeded our maximum attempts and must exit
             break
         logger.warning(
-            msg, attempt, f"{sleep:.3f}",
+            f"Attempt {attempt} to perform transaction was beaten "
+            f"by a different attempt. Sleeping for {sleep:.3f} seconds.",
         )
         time.sleep(sleep)
