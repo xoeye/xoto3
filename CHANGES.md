@@ -1,6 +1,27 @@
+## 1.13.0
+
+`LazyMulticast` - a ContextManager-based interface for
+process-local multicasting of a producer.
+
+`funnel_latest_from_log_group` - CloudWatch Logs funnel that composes
+easily with the above.
+
+`funnel_sharded_stream` - Genericized sharded stream funnel that
+guarantees receiving subsequent writes. Previously existing DynamoDB
+streams processor `process_latest_from_stream` uses this now.
+
+### 1.12.2
+
+Cover more exception types in retries for DynamoDB transaction utilities.
+
+### 1.12.1
+
+Update `all_items_for_next_attempt` to be able to handle multiple
+tables with different key schemas
+
 ## 1.12.0
 
-An enhanced API supporting the use of
+`TypedTable` - An enhanced API supporting the use of
 `dynamodb.write_versioned.versioned_transact_write_items`, which is a
 great way to write business logic against DynamoDB.
 
@@ -74,7 +95,7 @@ avoid race conditions.
 
 - `map_tree` now supports postorder transformations via keyword argument.
 
-### 1.4.0
+## 1.4.0
 
 - Improved DynamoDB Item-related Exceptions for `GetItem`,
   `put_but_raise_if_exists`, and `versioned_diffed_update_item`.

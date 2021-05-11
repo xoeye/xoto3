@@ -39,7 +39,16 @@ def test_no_io_run():
         attempts += 1
         if attempts == 1:
             raise ClientError(
-                {"Error": {"Code": "TransactionCanceledException"}}, "transact_write_items"
+                {
+                    "Error": {
+                        "Code": "TransactionCanceledException",
+                        "CancellationReasons": [
+                            dict(Code="ConditionalCheckFailed"),
+                            dict(Code="ProvisionedThroughputExceeded"),
+                        ],
+                    }
+                },
+                "transact_write_items",
             )
         # otherwise "succeed"
 
@@ -82,7 +91,7 @@ def test_no_io_run():
     # we eventually raise after lots of failures
     def transact_always_cancel(TransactItems):
         raise ClientError(
-            {"Error": {"Code": "TransactionCanceledException"}}, "transact_write_items"
+            {"Error": {"Code": "TransactionInProgressException"}}, "transact_write_items"
         )
 
     with pytest.raises(TransactionAttemptsOverrun) as e:
