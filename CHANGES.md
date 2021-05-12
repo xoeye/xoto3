@@ -1,3 +1,7 @@
+### 1.13.1
+
+Fix regression in `backoff` and associated implementation.
+
 ## 1.13.0
 
 `LazyMulticast` - a ContextManager-based interface for

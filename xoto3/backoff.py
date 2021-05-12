@@ -8,7 +8,7 @@ from logging import getLogger as get_logger
 import botocore.exceptions
 
 from .errors import client_error_name
-from .utils.retry import expo, retry_while, sleep_join
+from .utils.retry import expo, retry_while, sleep_between_expected_failures
 
 logger = get_logger(__name__)
 
@@ -22,5 +22,5 @@ def _is_boto3_retryable(e: Exception) -> bool:
     return client_error_name(e) in RETRY_EXCEPTIONS
 
 
-backoff = retry_while(_is_boto3_retryable for _ in sleep_join(expo()))
+backoff = retry_while(sleep_between_expected_failures(_is_boto3_retryable, expo()))
 """Infinite exponential backoff for the specified errors"""
