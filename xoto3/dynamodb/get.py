@@ -2,6 +2,8 @@ from functools import wraps
 from logging import getLogger
 from typing import Callable, TypeVar, cast
 
+from xoto3.utils.stack_default import StackDefault
+
 from .constants import DEFAULT_ITEM_NAME
 from .exceptions import ItemNotFoundException, raise_if_empty_getitem_response
 from .types import Item, ItemKey, TableResource
@@ -9,7 +11,17 @@ from .types import Item, ItemKey, TableResource
 logger = getLogger(__name__)
 
 
-def GetItem(Table: TableResource, Key: ItemKey, nicename=DEFAULT_ITEM_NAME, **kwargs) -> Item:
+ConsistentRead = StackDefault("xoto3-GetItem-ConsistentRead", False)
+
+
+@ConsistentRead.apply_to("ConsistentRead")
+def GetItem(
+    Table: TableResource,
+    Key: ItemKey,
+    nicename=DEFAULT_ITEM_NAME,
+    ConsistentRead: bool = ConsistentRead(),
+    **kwargs,
+) -> Item:
     """Use this if possible instead of get_item directly
 
     because the default behavior of the boto3 get_item is bad (doesn't

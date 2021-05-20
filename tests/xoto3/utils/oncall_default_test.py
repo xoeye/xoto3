@@ -9,7 +9,7 @@ utcnow = OnCallDefault(datetime.utcnow)
 
 
 def test_oncall_default_works_with_pos_or_kw():
-    @utcnow.default("when")
+    @utcnow.apply_to("when")
     def final(a: str, when: datetime = utcnow(), f: float = 1.2):
         return when
 
@@ -21,7 +21,7 @@ def test_oncall_default_works_with_pos_or_kw():
 
 
 def test_oncall_default_works_with_kw_only():
-    @utcnow.default("when")
+    @utcnow.apply_to("when")
     def f(a: str, *, when: datetime = utcnow()):
         return when
 
@@ -30,7 +30,7 @@ def test_oncall_default_works_with_kw_only():
 
 
 def test_deco_works_with_var_kwargs():
-    @utcnow.default("when")
+    @utcnow.apply_to("when")
     def f(**kwargs):
         return kwargs["when"]
 
@@ -49,7 +49,7 @@ def test_disallow_positional_without_default():
 
     with pytest.raises(NotSafeToDefaultError):
 
-        @utcnow.default("when")
+        @utcnow.apply_to("when")
         def nope(when: datetime, a: int):
             pass
 
@@ -58,7 +58,7 @@ def test_disallow_not_found_without_var_kwargs():
 
     with pytest.raises(NotSafeToDefaultError):
 
-        @utcnow.default("notthere")
+        @utcnow.apply_to("notthere")
         def steve(a: str, *args, b=1, c=2):
             pass
 
@@ -68,7 +68,7 @@ def test_disallow_var_args_name_matches():
         # *args itself has the default value 'new empty tuple', and if
         # you want to provide a positional default you should give it
         # a real name.
-        @utcnow.default("args")
+        @utcnow.apply_to("args")
         def felicity(a: str, *args):
             pass
 
@@ -77,6 +77,6 @@ def test_disallow_var_args_name_matches():
         # kwargs itself has the default value 'new empty dict', and if
         # you want to put things in it you should specify them
         # individually.
-        @utcnow.default("kwargs")
+        @utcnow.apply_to("kwargs")
         def george(a: str, **kwargs):
             pass

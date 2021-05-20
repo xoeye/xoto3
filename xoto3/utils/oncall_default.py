@@ -164,7 +164,7 @@ class OnCallDefault(ty.Generic[T]):
     def __init__(self, default_callable: ty.Callable[[], T]):
         self.default_callable = default_callable
 
-    def default(self, param_name: str) -> ty.Callable[[F], F]:
+    def apply_to(self, param_name: str) -> ty.Callable[[F], F]:
         return make_oncall_default_deco(self.default_callable, param_name)
 
     def __call__(self) -> T:

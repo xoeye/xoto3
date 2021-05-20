@@ -33,7 +33,7 @@ def test_composes_with_oncall_default():
 
     when = OnCallDefault(unwrap(NowContext.get))
 
-    @when.default("now")
+    @when.apply_to("now")
     def f(now: datetime = when()):
         assert isinstance(now, datetime)
         return now
