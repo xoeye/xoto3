@@ -126,11 +126,15 @@ class OnCallDefault(ty.Generic[T]):
     3. Positional-or-keyword parameters where a default is explicitly
        provided in the function definition.
 
-    This is because it is not possible to identify which arguments a
-    caller unaware of the special oncall default behavior _did not_
-    intend to provide solely by their position. By preserving this
-    restriction, we allow callers to remain blissfully ignorant of the
-    application of this decorator.
+    4. The full **kwargs dictionary. This is a special case where we
+       will take your provided default dictionary and then perform a
+       shallow merge of the provided keyword arguments.
+
+    The limitations are because it is not otherwise possible to
+    identify which arguments a caller unaware of the special oncall
+    default behavior _did not_ intend to provide solely by their
+    position. By preserving this restriction, we allow callers to
+    remain blissfully ignorant of the application of this decorator.
 
     PLEASE NOTE: It is strongly recommended that you use this only for
     keyword-only arguments that your function does not require to be

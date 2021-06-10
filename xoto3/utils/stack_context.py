@@ -21,16 +21,18 @@ def stack_context(contextvar: cv.ContextVar[T], value: T) -> ty.Iterator:
 
     Caveat emptor: This is essentially functional dependency
     injection. Like all forms of dependency injection, it creates
-    spooky action at a distance. The advantage is that you can reduce
-    explicit coupling. The disadvantage is that the coupling becomes
-    harder to immediately see.
+    action at a distance. The advantage is that you can reduce
+    coupling in intermediate layers. The disadvantage is that even
+    though this is more explicit than globals, it's still less
+    explicit than parameter drilling.
 
-    In some cases it would be better for your code to make its
+    So, In some cases it may be better for your code to make its
     dependencies explicit by going ahead and doing prop-drilling, so
     don't use this just because you can. In many cases, a functional
     core, imperative shell approach will be clearer. This is for cases
     where the benefits of the magic clearly outweigh its harms. Choose
     wisely.
+
     """
     try:
         token = contextvar.set(value)
@@ -40,8 +42,8 @@ def stack_context(contextvar: cv.ContextVar[T], value: T) -> ty.Iterator:
 
 
 class StackContext(ty.Generic[T]):
-    """A thin wrapper around a ContextVar that keeps other users from
-    setting it directly.
+    """A thin wrapper around a ContextVar that requires it to be set in a
+    stack-frame limited manner.
 
     These should only be created at a module level, just like the
     underlying ContextVar.

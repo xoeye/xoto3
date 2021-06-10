@@ -22,7 +22,7 @@ def GetItem(
     {nicename/Item}NotFoundException when an item is not found.
 
     ```
-    with GetItemKwargs.set_default(dict(ConsistentRead=True)):
+    with GetItem_kwargs.set_default(dict(ConsistentRead=True)):
         function_that_calls_GetItem(...)
     ```
 
