@@ -5,6 +5,7 @@ import pytest
 from xoto3.dynamodb.exceptions import ItemNotFoundException, get_item_exception_type
 from xoto3.dynamodb.get import (
     GetItem,
+    GetItem_kwargs,
     retry_notfound_consistent_read,
     strongly_consistent_get_item,
     strongly_consistent_get_item_if_exists,
@@ -86,3 +87,13 @@ def test_dont_retry_get_with_consistent_read_if_it_was_already_consistent():
         test_get(ConsistentRead=True)
 
     assert calls == 1
+
+
+def test_consistent_read_via_kwargs(integration_test_id_table, integration_test_id_table_put):
+    item_key = dict(id="item-will-not-immediately-exist")
+    item = dict(item_key, val="felicity")
+
+    integration_test_id_table_put(item)
+
+    with GetItem_kwargs.set_default(dict(ConsistentRead=True)):
+        assert item == GetItem(integration_test_id_table, item_key)

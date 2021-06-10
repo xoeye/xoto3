@@ -11,10 +11,10 @@ from .types import Item, ItemKey, TableResource
 logger = getLogger(__name__)
 
 
-GetItemKwargs: ContextualDefault[dict] = ContextualDefault("get_item_kwargs", dict(), "xoto3-")
+GetItem_kwargs: ContextualDefault[dict] = ContextualDefault("get_item_kwargs", dict(), "xoto3-")
 
 
-@GetItemKwargs.apply
+@GetItem_kwargs.apply
 def GetItem(
     Table: TableResource, Key: ItemKey, nicename=DEFAULT_ITEM_NAME, **get_item_kwargs,
 ) -> Item:
