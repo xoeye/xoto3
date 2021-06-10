@@ -13,3 +13,7 @@ def test_that_the_name_is_used_and_everything_works():
         assert f("b") == 4
         with IntDefault.set_default(7):
             assert f("c") == 7
+            assert f("c", 8) == 8
+        assert f("d") == 4
+    assert f("e") == 1
+    assert f("f", i=3) == 3

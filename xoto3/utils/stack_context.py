@@ -42,6 +42,10 @@ def stack_context(contextvar: cv.ContextVar[T], value: T) -> ty.Iterator:
 class StackContext(ty.Generic[T]):
     """A thin wrapper around a ContextVar that keeps other users from
     setting it directly.
+
+    These should only be created at a module level, just like the
+    underlying ContextVar.
+
     """
 
     def __init__(self, name: str, default: T):

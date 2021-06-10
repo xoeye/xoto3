@@ -11,22 +11,18 @@ from .types import Item, ItemKey, TableResource
 logger = getLogger(__name__)
 
 
-GetItemConsistentRead = ContextualDefault("ConsistentRead", False, "xoto3-GetItem-")
+GetItemKwargs: ContextualDefault[dict] = ContextualDefault("get_item_kwargs", dict(), "xoto3-")
 
 
-@GetItemConsistentRead.apply
+@GetItemKwargs.apply
 def GetItem(
-    Table: TableResource,
-    Key: ItemKey,
-    nicename=DEFAULT_ITEM_NAME,
-    ConsistentRead: bool = GetItemConsistentRead(),
-    **kwargs,
+    Table: TableResource, Key: ItemKey, nicename=DEFAULT_ITEM_NAME, **get_item_kwargs,
 ) -> Item:
     """Use this instead of get_item to raise
     {nicename/Item}NotFoundException when an item is not found.
 
     ```
-    with GetItemConsistentRead.set_default(True):
+    with GetItemKwargs.set_default(dict(ConsistentRead=True)):
         function_that_calls_GetItem(...)
     ```
 
@@ -37,7 +33,7 @@ def GetItem(
     """
     nicename = nicename or DEFAULT_ITEM_NAME  # don't allow empty string
     logger.debug(f"Get{nicename} {Key} from Table {Table.name}")
-    response = Table.get_item(Key={**Key}, **kwargs)
+    response = Table.get_item(Key={**Key}, **get_item_kwargs)
     raise_if_empty_getitem_response(response, nicename=nicename, key=Key, table_name=Table.name)
     return response["Item"]
 

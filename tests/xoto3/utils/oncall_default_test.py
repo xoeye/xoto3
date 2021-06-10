@@ -72,11 +72,19 @@ def test_disallow_var_args_name_matches():
         def felicity(a: str, *args):
             pass
 
-    with pytest.raises(NotSafeToDefaultError):
 
-        # kwargs itself has the default value 'new empty dict', and if
-        # you want to put things in it you should specify them
-        # individually.
-        @utcnow.apply_to("kwargs")
-        def george(a: str, **kwargs):
-            pass
+GeorgeKwargs = OnCallDefault(lambda: dict(b=2, c=3))
+
+
+def test_allow_var_kwargs_merge():
+    # kwargs itself is a dict,
+    # and we will perform top-level merging
+    # for you if that's what you want
+
+    @GeorgeKwargs.apply_to("kwargs")
+    def george(a: str, **kwargs):
+        return kwargs
+
+    assert george("1") == dict(b=2, c=3)
+    assert george("2", b=3) == dict(b=3, c=3)
+    assert george("3", c=5, d=78) == dict(b=2, c=5, d=78)

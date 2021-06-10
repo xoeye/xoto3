@@ -9,6 +9,7 @@ from typing import Iterable, List, Set, Tuple
 from xoto3.backoff import backoff
 from xoto3.dynamodb.types import TableResource
 from xoto3.lazy_session import tll_from_session
+from xoto3.utils.contextual_default import ContextualDefault
 from xoto3.utils.iter import grouper_it, peek
 from xoto3.utils.lazy import Lazy
 
@@ -30,8 +31,14 @@ class KeyItemPair(ty.NamedTuple):
     item: Item  # if empty, the key was not found
 
 
+BatchGetItem_kwargs: ContextualDefault[dict] = ContextualDefault(
+    "batch_get_item_kwargs", dict(), "xoto3-"
+)
+
+
+@BatchGetItem_kwargs.apply
 def BatchGetItem(
-    table: TableResource, keys: ty.Iterable[ItemKey], **kwargs
+    table: TableResource, keys: ty.Iterable[ItemKey], **batch_get_item_kwargs
 ) -> Iterable[KeyItemPair]:
     """Abstracts threading, pagination, and limited deduplication for BatchGetItem.
 
@@ -63,7 +70,10 @@ def BatchGetItem(
     return (
         key_tuple_item_pair_to_key_item_pair(ktip)
         for ktip in BatchGetItemTupleKeys(
-            table.name, (key_translator(key) for key in keys), canonical_key_attrs_order, **kwargs
+            table.name,
+            (key_translator(key) for key in keys),
+            canonical_key_attrs_order,
+            **batch_get_item_kwargs,
         )
     )
 
@@ -71,6 +81,7 @@ def BatchGetItem(
 KeyTupleItemPair = Tuple[KeyTuple, Item]
 
 
+@BatchGetItem_kwargs.apply
 def BatchGetItemTupleKeys(
     table_name: str,
     key_value_tuples: Iterable[Tuple[KeyAttributeType, ...]],
@@ -78,7 +89,7 @@ def BatchGetItemTupleKeys(
     *,
     dynamodb_resource=None,
     thread_pool=None,
-    **kwargs,
+    **batch_get_item_kwargs,
 ) -> Iterable[KeyTupleItemPair]:
     """Gets multiple items from the same table in as few round trips as possible.
 
@@ -145,7 +156,7 @@ def BatchGetItemTupleKeys(
                 key_values_batch,
                 key_attr_names,
                 dynamodb_resource=_DYNAMODB_RESOURCE(),
-                **kwargs,
+                **batch_get_item_kwargs,
             )
 
         # threaded implementation
@@ -160,7 +171,11 @@ def BatchGetItemTupleKeys(
         # single-threaded serial batches
         for key_values_batch_set in batches_of_100_iter:
             results = _get_single_batch(
-                table_name, key_values_batch_set, key_attr_names, dynamodb_resource=ddbr, **kwargs
+                table_name,
+                key_values_batch_set,
+                key_attr_names,
+                dynamodb_resource=ddbr,
+                **batch_get_item_kwargs,
             )
             for key_value_tuple, item in results:
                 total_count += 1
@@ -180,7 +195,7 @@ def _get_single_batch(
     key_attr_names: ty.Sequence[str] = ("id",),
     *,
     dynamodb_resource=None,
-    **kwargs,
+    **batch_get_item_kwargs,
 ) -> List[KeyTupleItemPair]:
     """Does a BatchGetItem of a single batch of 100.
 
@@ -200,7 +215,7 @@ def _get_single_batch(
 
     table_request = {
         "Keys": [_kv_tuple_to_key(kt, key_attr_names) for kt in key_values_batch],
-        **kwargs,
+        **batch_get_item_kwargs,
     }
     output: List[KeyTupleItemPair] = list()
     while table_request and table_request.get("Keys", []):

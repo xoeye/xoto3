@@ -53,6 +53,9 @@ def _validate_argument_is_defaultable(f: F, param_name: str) -> float:
                         "to be eligible for having an oncall default provided."
                     )
                 return i
+            if param.kind == inspect.Parameter.VAR_KEYWORD:
+                # allow **kwargs to have a mergeable default set
+                return -1
             if param.kind == inspect.Parameter.KEYWORD_ONLY:
                 # if it can only be supplied by keyword, then it is
                 # always simple to identify whether the caller
@@ -82,8 +85,15 @@ def make_oncall_default_deco(
 
         @wraps(f)
         def wrapper(*args, **kwargs):
-            if param_name not in kwargs:
-                # if it was provided as a keyword argument, then there's nothing for us to do
+            if pos_num == -1:
+                # merge default kwargs with provided kwargs
+                default_kwargs = default_callable()
+                assert isinstance(
+                    default_kwargs, ty.Mapping
+                ), "A default for kwargs itself must be a mapping so it can be merged with other keyword arguments"
+                kwargs = dict(default_kwargs, **kwargs)
+            elif param_name not in kwargs:
+                # if it was provided as a keyword argument, then we shouldn't override it
                 if len(args) <= pos_num:
                     # the argument is keyword-only or was not provided as a positional argument
                     kwargs[param_name] = default_callable()
