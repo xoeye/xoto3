@@ -1,3 +1,9 @@
+## 1.14.0
+
+`StackContext` and `OnCallDefault` utilities for providing new ways of
+injecting keyword arguments across a call stack without polluting all
+your function signatures in between.
+
 ### 1.13.1
 
 Fix regression in `backoff` and associated implementation.

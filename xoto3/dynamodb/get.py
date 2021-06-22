@@ -2,6 +2,8 @@ from functools import wraps
 from logging import getLogger
 from typing import Callable, TypeVar, cast
 
+from xoto3.utils.contextual_default import ContextualDefault
+
 from .constants import DEFAULT_ITEM_NAME
 from .exceptions import ItemNotFoundException, raise_if_empty_getitem_response
 from .types import Item, ItemKey, TableResource
@@ -9,16 +11,29 @@ from .types import Item, ItemKey, TableResource
 logger = getLogger(__name__)
 
 
-def GetItem(Table: TableResource, Key: ItemKey, nicename=DEFAULT_ITEM_NAME, **kwargs) -> Item:
-    """Use this if possible instead of get_item directly
+GetItem_kwargs: ContextualDefault[dict] = ContextualDefault("get_item_kwargs", dict(), "xoto3-")
 
-    because the default behavior of the boto3 get_item is bad (doesn't
-    fail if no item was found).
 
+@GetItem_kwargs.apply
+def GetItem(
+    Table: TableResource, Key: ItemKey, nicename=DEFAULT_ITEM_NAME, **get_item_kwargs,
+) -> Item:
+    """Use this instead of get_item to raise
+    {nicename/Item}NotFoundException when an item is not found.
+
+    ```
+    with GetItem_kwargs.set_default(dict(ConsistentRead=True)):
+        function_that_calls_GetItem(...)
+    ```
+
+    to set the default for ConsistentRead differently in different
+    contexts without drilling parameters all the way down here. Note
+    that an explicitly-provided parameter will always override the
+    default.
     """
     nicename = nicename or DEFAULT_ITEM_NAME  # don't allow empty string
     logger.debug(f"Get{nicename} {Key} from Table {Table.name}")
-    response = Table.get_item(Key={**Key}, **kwargs)
+    response = Table.get_item(Key={**Key}, **get_item_kwargs)
     raise_if_empty_getitem_response(response, nicename=nicename, key=Key, table_name=Table.name)
     return response["Item"]
 
@@ -26,13 +41,11 @@ def GetItem(Table: TableResource, Key: ItemKey, nicename=DEFAULT_ITEM_NAME, **kw
 def strongly_consistent_get_item(
     table: TableResource, key: ItemKey, *, nicename: str = DEFAULT_ITEM_NAME,
 ) -> Item:
-    """This is the default getter for a reason.
+    """Shares ItemNotFoundException-raising behavior with GetItem.
 
-    GetItem raises if the item does not exist, preventing you from updating
-    something that does not exist.
-
-    Strongly consistent reads are important when performing updates - if you
-    read a stale copy you will be guaranteed to fail your update.
+    Strongly consistent reads are important when performing
+    transactional updates - if you read a stale copy you will be
+    likely to fail a transaction retry.
     """
     return GetItem(table, key, ConsistentRead=True, nicename=nicename)
 
