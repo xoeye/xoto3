@@ -1,3 +1,19 @@
+## 1.15.0
+
+Changes to `versioned_transact_write_items`:
+
+1. Any write to an item that leaves it in its pre-existing state
+   (`==`) will perform only a ConditionCheck and not an actual
+   Put/Delete on that item. This avoids having incrementing
+   `item_version` when nothing was actually changed.
+2. Single-item `versioned_transact_write_items` where the item is
+   unchanged (`==`) performs no ConditionCheck and no spurious
+   write. If you're not operating on multiple items, then there is no
+   meaningful 'transactionality' to knowing whether the item was
+   changed _after_ your transaction started, because transactions
+   can't assert anything about the future - only about a conjunction
+   between multiple items at a point in time.
+
 ## 1.14.0
 
 `StackContext` and `OnCallDefault` utilities for providing new ways of
