@@ -71,14 +71,17 @@ def _write(
     )
 
     hashable_item_key = hashable_key(item_key)
+    if hashable_item_key in items and items[hashable_item_key] == item_or_none:
+        """You've asked us to write an effect that would have no effect, and we are dropping it"""
+        new_effects = {k: v for k, v in effects.items() if k != hashable_item_key}
+    else:
+        new_effects = {**effects, hashable_item_key: item_or_none}
 
     return VersionedTransaction(
         tables={
             **transaction.tables,
             table_name: _TableData(
-                items=items,
-                effects={**effects, hashable_item_key: item_or_none},
-                key_attributes=key_attributes,
+                items=items, effects=new_effects, key_attributes=key_attributes,
             ),
         }
     )

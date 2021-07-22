@@ -281,3 +281,17 @@ def test_assert_unchanged(integration_test_id_table_put, integration_test_id_tab
     )
 
     assert 9 == require(res, integration_test_id_table.name, dict(id=test_id_to_put))["val"]
+
+
+def test_dont_write_single_unchanged(integration_test_id_table_put, integration_test_id_table):
+    test_key = dict(id="versioned-transact-assert-item-version-unchanged")
+
+    integration_test_id_table_put(dict(test_key, val=4, item_version=3))
+
+    def put_after_get(tx):
+        a = require(tx, integration_test_id_table.name, test_key)
+        return put(tx, integration_test_id_table.name, a)
+
+    res = versioned_transact_write_items(put_after_get)
+
+    assert require(res, integration_test_id_table.name, test_key)["item_version"] == 3
