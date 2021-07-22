@@ -60,6 +60,10 @@ def versioned_transact_write_items(
     moment of the successful transaction completion, including items
     you did not need to modify.
 
+    An exception to the above rule is that if you interact with only
+    one item and you do not change it, we will not call
+    TransactWriteItems at all.
+
     Returns the completed transaction, which contains the resulting
     items as written to the table(s) at the completion of the
     transaction.
@@ -71,6 +75,7 @@ def versioned_transact_write_items(
     The implementation for transact_write_items will also optimize
     your DynamoDB costs by reverting to a simple (but still versioned)
     Put or Delete if you only operate on a single item.
+
     """
     batch_get_item, transact_write_items = boto3_impl_defaults(
         batch_get_item, transact_write_items,
@@ -90,7 +95,6 @@ def versioned_transact_write_items(
                 **built_transaction_to_transact_write_items_args(
                     built_transaction,
                     iso8601strict(datetime.utcnow()),
-                    "",
                     item_version_attribute,
                     last_written_attribute,
                 )

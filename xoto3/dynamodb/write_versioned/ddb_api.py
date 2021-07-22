@@ -126,8 +126,13 @@ def make_transact_multiple_but_optimize_single(ddb_client):
         if len(TransactItems) == 0:
             _log.debug("Nothing to transact - returning")
             return
+        # ClientRequestToken, if provided, indicates a desire to use
+        # certain idempotency guarantees provided only by
+        # TransactWriteItems. I'm not sure if it's even relevant for a
+        # single-item operation, but it's an issue of expense, not
+        # correctness, to leave it in.
         if len(TransactItems) == 1 and "ClientRequestToken" not in kwargs:
-            # attempt single put or delete to halve the cost
+            # attempt simple condition-checked put or delete to halve the cost
             command = TransactItems[0]
             item_args = tuple(command.values())[0]  # first and only value is a dict of arguments
             if set(command) == {"Put"}:
@@ -138,7 +143,7 @@ def make_transact_multiple_but_optimize_single(ddb_client):
                 return
             if set(command) == {"ConditionCheck"}:
                 _log.debug(
-                    "A solitary ConditionCheck is meaningless - you already retrieved the item"
+                    "Item was not modified and is solitary - no need to interact with the table"
                 )
                 return
             # we don't (yet) support single write optimization for things other than Put or Delete
@@ -172,7 +177,6 @@ def _serialize_versioned_expr(expr: dict) -> dict:
 def built_transaction_to_transact_write_items_args(
     transaction: VersionedTransaction,
     last_written_at_str: str,
-    ClientRequestToken: str = "",
     item_version_attribute: str = "item_version",
     last_written_attribute: str = "last_written_at",
 ) -> dict:
@@ -261,7 +265,4 @@ def built_transaction_to_transact_write_items_args(
             ]
         )
 
-    args: Dict[str, Any] = dict(TransactItems=transact_items)
-    if ClientRequestToken:
-        args["ClientRequestToken"] = ClientRequestToken
-    return args
+    return dict(TransactItems=transact_items)
