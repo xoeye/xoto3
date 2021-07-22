@@ -123,6 +123,9 @@ def _ddb_batch_get_item(
 
 def make_transact_multiple_but_optimize_single(ddb_client):
     def boto3_transact_multiple_but_optimize_single(TransactItems: List[dict], **kwargs) -> Any:
+        if len(TransactItems) == 0:
+            _log.debug("Nothing to transact - returning")
+            return
         if len(TransactItems) == 1 and "ClientRequestToken" not in kwargs:
             # attempt single put or delete to halve the cost
             command = TransactItems[0]
@@ -133,7 +136,12 @@ def make_transact_multiple_but_optimize_single(ddb_client):
             if set(command) == {"Delete"}:
                 ddb_client.delete_item(**{**item_args, **kwargs})
                 return
-            # we don't (yet) support single writee optimization for things other than Put or Delete
+            if set(command) == {"ConditionCheck"}:
+                _log.debug(
+                    "A solitary ConditionCheck is meaningless - you already retrieved the item"
+                )
+                return
+            # we don't (yet) support single write optimization for things other than Put or Delete
         ddb_client.transact_write_items(TransactItems=TransactItems, **kwargs)
 
     return boto3_transact_multiple_but_optimize_single
@@ -168,10 +176,6 @@ def built_transaction_to_transact_write_items_args(
     item_version_attribute: str = "item_version",
     last_written_attribute: str = "last_written_at",
 ) -> dict:
-
-    args: Dict[str, Any] = dict(ClientRequestToken=ClientRequestToken)
-    if not ClientRequestToken:
-        args.pop("ClientRequestToken")
     transact_items = list()
     for table_name, tbl_data in transaction.tables.items():
         items, effects, key_attributes = tbl_data
@@ -185,7 +189,7 @@ def built_transaction_to_transact_write_items_args(
             keys_of_items_to_be_modified.add(item_hashable_key)
             item = get_existing_item(item_hashable_key)
             expected_version = item.get(item_version_attribute, 0)
-            expression_ensuring_unmodifiedness = _serialize_versioned_expr(
+            expression_expecting_item_version = _serialize_versioned_expr(
                 versioned_item_expression(
                     expected_version,
                     item_version_key=item_version_attribute,
@@ -200,7 +204,7 @@ def built_transaction_to_transact_write_items_args(
                         Key=serialize_item(
                             dict(hashable_key_to_key(key_attributes, item_hashable_key))
                         ),
-                        **expression_ensuring_unmodifiedness,
+                        **expression_expecting_item_version,
                     )
                 )
 
@@ -217,7 +221,7 @@ def built_transaction_to_transact_write_items_args(
                             },
                         )
                     ),
-                    **expression_ensuring_unmodifiedness,
+                    **expression_expecting_item_version,
                 )
             )
 
@@ -232,7 +236,7 @@ def built_transaction_to_transact_write_items_args(
             item_hashable_key: HashableItemKey, item: Optional[Item]
         ) -> dict:
             """This will also check that the item still does not exist if it previously did not"""
-            expression_ensuring_unmodifiedness = _serialize_versioned_expr(
+            expression_expecting_item_version = _serialize_versioned_expr(
                 versioned_item_expression(
                     get_existing_item(item_hashable_key).get(item_version_attribute, 0),
                     item_version_key=item_version_attribute,
@@ -245,7 +249,7 @@ def built_transaction_to_transact_write_items_args(
                     Key=serialize_item(
                         dict(hashable_key_to_key(key_attributes, item_hashable_key))
                     ),
-                    **expression_ensuring_unmodifiedness,
+                    **expression_expecting_item_version,
                 )
             )
 
@@ -257,5 +261,7 @@ def built_transaction_to_transact_write_items_args(
             ]
         )
 
-    args["TransactItems"] = transact_items
+    args: Dict[str, Any] = dict(TransactItems=transact_items)
+    if ClientRequestToken:
+        args["ClientRequestToken"] = ClientRequestToken
     return args
