@@ -94,6 +94,35 @@ wv.versioned_transact_write_items(
 )
 ```
 
+### update deserializable item if exists
+
+This is a simple but common single-item operation, expressed using
+even higher level APIs, assuming you have a Task class that can be
+deserialized and reserialized using a pair of functions. This will not
+invoke an actual Transaction (which costs twice as much) but will
+simply use a integer version Conditional Expression to make sure you
+are the only writer.
+
+```python
+
+task_table = wv.TypedTable('TaskTable', task_deserialize, task_serialize, 'Task')
+task_key = dict(id='task1')
+
+def rename_if_multi(task: Task) -> Task:
+    """As always, this is guaranteed to run transactionally in its entirety"""
+    if task.num_subtasks > 1:
+        task.name = "multi tree task"
+    return task
+
+wv.versioned_transact_write_items(
+    wv.update_if_exists(
+        task_table,
+        rename_if_multi,
+        task_key,
+    )
+)
+```
+
 ### Prefetching items to transact
 
 In many cases you will wish you prefetch some items that you do expect
