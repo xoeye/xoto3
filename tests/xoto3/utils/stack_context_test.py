@@ -1,5 +1,6 @@
 from contextvars import ContextVar
 from datetime import datetime
+from multiprocessing.pool import ThreadPool
 
 from xoto3.utils.oncall_default import OnCallDefault
 from xoto3.utils.stack_context import StackContext, stack_context, unwrap
@@ -67,3 +68,25 @@ def test_StackContext_interface():
     with ConsistentReadContext.set(True):
         assert g() is True
     assert g() is False
+
+
+NumberContext = ContextVar("Number", default=-1)
+
+
+def test_threaded_stack_context():
+    """The idea behind context vars is that each thread gets its own
+    without anyone having to use thread.locals directly, and when paired with stack_context,
+    you can have nested contexts easily within the same thread.
+    """
+    vals = list(range(10))
+
+    def extract_from_context():
+        return NumberContext.get()
+
+    def put_in_context(val):
+        with stack_context(NumberContext, val):
+            return extract_from_context()
+
+    out = ThreadPool(3).map(put_in_context, vals)
+
+    assert out == vals
