@@ -15,19 +15,20 @@ def test_stack_context():
     def intermediate():
         return final()
 
-    outer_when = datetime(2018, 9, 9, 9, 9, 9)
+    sept_9 = datetime(2018, 9, 9, 9, 9, 9)
 
     def outer():
-        with stack_context(NowContext, lambda: outer_when):
+        with stack_context(NowContext, lambda: sept_9):
             return intermediate()
 
-    way_outer_when = datetime(2019, 12, 12, 8, 0, 0)
-    with stack_context(NowContext, lambda: way_outer_when):
-        assert way_outer_when == intermediate()
-        assert outer_when == outer()
+    dec_12 = datetime(2019, 12, 12, 8, 0, 0)
+    with stack_context(NowContext, lambda: dec_12):
+        assert dec_12 == intermediate()
+        assert sept_9 == outer()
+        assert dec_12 == intermediate()
 
-    assert NowContext.get() != outer_when
-    assert NowContext.get() != way_outer_when
+    assert NowContext.get()() != sept_9
+    assert NowContext.get()() != dec_12
 
 
 def test_composes_with_oncall_default():
@@ -83,10 +84,15 @@ def test_threaded_stack_context():
     def extract_from_context():
         return NumberContext.get()
 
-    def put_in_context(val):
+    def put_in_context(app_func, val):
         with stack_context(NumberContext, val):
-            return extract_from_context()
+            return app_func()
 
-    out = ThreadPool(3).map(put_in_context, vals)
+    from functools import partial
+
+    def the_app_computation():
+        return extract_from_context()
+
+    out = ThreadPool(3).map(partial(put_in_context, the_app_computation), vals)
 
     assert out == vals
