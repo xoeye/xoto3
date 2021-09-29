@@ -61,16 +61,13 @@ def presume(
         )
     hkey = hashable_key(item_key)
     if hkey not in table_data.items:
+        item_value = dynamodb_prewrite(item_value, prewrite_transform) if item_value else None
+        # this prewrite makes sure the value looks like it could have come out of DynamoDB.
         return VersionedTransaction(
             tables={
                 **transaction.tables,
                 table_name: _TableData(
-                    items={
-                        **table_data.items,
-                        hkey: dynamodb_prewrite(item_value, prewrite_transform)
-                        if item_value
-                        else item_value,
-                    },
+                    items={**table_data.items, hkey: item_value},
                     effects=table_data.effects,
                     key_attributes=table_data.key_attributes,
                 ),

@@ -14,8 +14,8 @@ from xoto3.dynamodb.utils.index import hash_key_name, range_key_name
 DYNAMODB_STREAMS = make_dynamodb_stream_images_multicast()
 
 
-def make_accept_stream_images(item_slicer: Callable[[ItemImages], str]):
-    def accept_stream_item(images: ItemImages):
+def make_accept_stream_images(item_slicer: Callable[[ItemImages], dict]):
+    def accept_stream_item(images: ItemImages) -> None:
         old, new = images
         if not old:
             print(f"New item: {item_slicer(images)}")  # type: ignore
@@ -34,7 +34,7 @@ def make_key_slicer(table):
     except ValueError:
         range_key = ""
 
-    def extract_primary_key(images: ItemImages):
+    def extract_primary_key(images: ItemImages) -> dict:
         old, new = images
         item = new or old
         assert item is not None
@@ -48,7 +48,7 @@ def make_key_slicer(table):
 
 
 def make_item_slicer(key_slicer, attribute_names):
-    def item_slicer(images: ItemImages):
+    def item_slicer(images: ItemImages) -> dict:
         old, new = images
         if not new:
             new = dict()
