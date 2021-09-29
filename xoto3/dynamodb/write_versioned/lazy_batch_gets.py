@@ -1,4 +1,4 @@
-from typing import Collection, Mapping, Tuple
+from typing import Collection, Mapping
 
 from .errors import ItemUndefinedException
 from .prepare import add_item_to_base_request, parse_batch_get_request, prepare_clean_transaction
@@ -10,7 +10,7 @@ def lazy_batch_getting_transaction_builder(
     transaction_builder: TransactionBuilder,
     item_keys_by_table_name: Mapping[str, Collection[ItemKey]],
     batch_get_item: BatchGetItem,
-) -> Tuple[VersionedTransaction, VersionedTransaction]:
+) -> VersionedTransaction:
     """If your transaction attempts to get/require an item that was not
     prefetched, we will stop, fetch it, and then retry your
     transaction from the beginning.
@@ -38,7 +38,7 @@ def lazy_batch_getting_transaction_builder(
                 built_transaction = transaction_builder(clean_transaction)
                 if not undefined_needing_fetch:
                     # the builder didn't need to ask for anything
-                    return clean_transaction, built_transaction
+                    return built_transaction
                 else:
                     # the builder has asked for everything it knows to ask for
                     # and we need to restart from the batch get above.

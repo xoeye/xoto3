@@ -35,7 +35,7 @@ def create_and_link_task_unless_exists(t: wv.VersionedTransaction) -> wv.Version
     # ^ put this item into this table as long as the item does not exist
     user = user_table.require(dict(id=new_task["user_id"]))(t)  # type: ignore
     # ^ fetch the user and raise an exception if it does not exist
-    user["task_ids"].append(task_key["id"])
+    user["task_ids"] = (user.get("task_ids") or list()) + [task_key["id"]]
     t = user_table.put(user)(t)
     # ^ make sure that the user knows about its task
     return t
@@ -63,7 +63,7 @@ def test_task_and_user_are_both_written_if_task_does_not_exist():
     t = task_table.presume(task_key, None)(t)
     # declare that the task does not exist - essentially this is a 'fixture', but without I/O
     user_key = dict(id="steve")
-    user = dict(user_key, name="Actually Steve", task_ids=list())
+    user = dict(user_key, name="Actually Steve")
     t = user_table.presume(user_key, user)(t)
 
     t = create_and_link_task_unless_exists(t)
