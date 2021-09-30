@@ -83,12 +83,12 @@ def versioned_transact_write_items(
 
     built_transaction = None
     for i, _ in enumerate(attempts_iterator or timed_retry()):
-        clean_transaction, built_transaction = lazy_batch_getting_transaction_builder(
+        built_transaction = lazy_batch_getting_transaction_builder(
             transaction_builder, item_keys_by_table_name, batch_get_item,
         )
-        if built_transaction is clean_transaction or _is_empty(built_transaction):
+        if _is_empty(built_transaction):
             logger.info("No effects were defined, so the existing items will be returned as-is.")
-            return clean_transaction
+            return built_transaction
 
         try:
             transact_write_items(

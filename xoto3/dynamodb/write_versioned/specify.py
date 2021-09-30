@@ -1,6 +1,9 @@
 """Low level API for specifying non-effect facts about the state of the database"""
 from typing import Optional
 
+from xoto3.dynamodb.prewrite import dynamodb_prewrite
+from xoto3.utils.tree_map import SimpleTransform
+
 from .ddb_api import table_name as _table_name
 from .keys import hashable_key, standard_key_attributes
 from .types import Item, ItemKey, TableNameOrResource, VersionedTransaction, _TableData
@@ -11,6 +14,8 @@ def presume(
     table: TableNameOrResource,
     item_key: ItemKey,
     item_value: Optional[Item],
+    *,
+    prewrite_transform: Optional[SimpleTransform] = None,
 ) -> VersionedTransaction:
 
     """'To assume as true in the absence of proof to the contrary.'
@@ -56,6 +61,8 @@ def presume(
         )
     hkey = hashable_key(item_key)
     if hkey not in table_data.items:
+        item_value = dynamodb_prewrite(item_value, prewrite_transform) if item_value else None
+        # this prewrite makes sure the value looks like it could have come out of DynamoDB.
         return VersionedTransaction(
             tables={
                 **transaction.tables,

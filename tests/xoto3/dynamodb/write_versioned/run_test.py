@@ -10,6 +10,7 @@ from xoto3.dynamodb.write_versioned import (
     VersionedTransaction,
     delete,
     get,
+    presume,
     put,
     require,
     versioned_transact_write_items,
@@ -114,6 +115,14 @@ def test_no_io_run():
             batch_get_item=cast(BatchGetItem, batch_get_item),
             transact_write_items=transact_resource_not_found,
         )
+
+
+def test_presumed_items_get_returned_even_without_effects_being_executed():
+    def noop(vt: VersionedTransaction) -> VersionedTransaction:
+        return presume(vt, "tableA", dict(id="presume_me"), None)
+
+    result_vt = versioned_transact_write_items(noop)
+    assert get(result_vt, "tableA", dict(id="presume_me")) is None
 
 
 def test_integration_test_inc_and_create_and_delete(

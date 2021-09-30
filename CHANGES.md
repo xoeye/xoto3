@@ -1,3 +1,19 @@
+### 1.15.1
+
+Fixes to `versioned_transact_write_items`:
+
+1. `presume` will now apply the standard dynamodb_prewrite transform,
+   so that we don't get into situations where tuples aren't equal to
+   lists, or floats aren't equal to Decimals, for instance. Anything
+   presumed should look like an actual DynamoDB value, in other
+   words. This oversight was leading to certain situations where
+   presume was being used causing a superfluous write to the table.
+2. The returned transaction will always include any items inserted
+   into the transaction by `presume`, even if no effects were
+   applied. This only occurred when a single item was presumed for the
+   whole transaction and no changes were made to it, but it makes the
+   API slightly easier to work with.
+
 ## 1.15.0
 
 Changes to `versioned_transact_write_items`:

@@ -37,3 +37,9 @@ def test_define_table_doesnt_redefine():
     tx = delete(VersionedTransaction(dict()), "table1", dict(id="foo"))
     same_tx = define_table(tx, "table1", "id")
     assert same_tx is tx
+
+
+def test_presume_properly_performs_prewrite():
+    tx = VersionedTransaction(dict())
+    tx = presume(tx, "foo", dict(id="yo"), dict(id="yo", val=(1, 2, 3)))
+    assert require(tx, "foo", dict(id="yo")) == dict(id="yo", val=[1, 2, 3])
