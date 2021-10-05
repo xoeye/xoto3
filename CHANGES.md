@@ -1,3 +1,9 @@
+## 1.16.0
+
+- `write_item` single item write helper for the `write_versioned`
+  higher level DynamoDB transaction API. Suitable for any form of
+  transactional write to a single item (creation/update/deletion).
+
 ### 1.15.1
 
 Fixes to `versioned_transact_write_items`:

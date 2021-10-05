@@ -10,6 +10,7 @@ from xoto3.dynamodb.write_versioned import (
     update_existing,
     update_if_exists,
     versioned_transact_write_items,
+    write_item,
 )
 
 from .conftest import mock_next_run
@@ -96,3 +97,22 @@ def test_api2_create_or_update():
         create_or_update(table, lambda x: dict(key, foo=1), key), **mock_next_run(vt),
     )
     assert table.require(key)(vt)["foo"] == 1
+
+
+def test_api2_write_item_creates():
+    vt, table = _fake_table("felicity", "id")
+    key = dict(id="goodbye")
+    vt = versioned_transact_write_items(
+        write_item(table, lambda ox: dict(key, bar=8), key), **mock_next_run(vt),
+    )
+    assert table.require(key)(vt)["bar"] == 8
+
+
+def test_api2_write_item_deletes():
+    vt, table = _fake_table("felicity", "id")
+    key = dict(id="goodbye")
+    vt = table.presume(key, dict(key, baz=9))(vt)
+    vt = versioned_transact_write_items(
+        write_item(table, lambda x: None, key), **mock_next_run(vt),
+    )
+    assert table.get(key)(vt) is None
