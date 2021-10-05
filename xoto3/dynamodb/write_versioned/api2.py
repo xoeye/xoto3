@@ -132,6 +132,14 @@ def ItemTable(
     return TypedTable(table_name, deepcopy, _item_ident, item_name=item_name)
 
 
+# The following are simple single-item-write helpers with various type
+# signatures for different semantics around your expectations for
+# whether an item already exists, what to do if it doesn't, and
+# whether the item is guaranteed to exist at the end of a successful
+# call. They are provided simply as a convenience - they do nothing
+# that an individual application could not do on its own.
+
+
 def update_if_exists(
     table: TypedTable[T], updater: Callable[[T], T], key: ItemKey,
 ) -> TransactionBuilder:
@@ -168,3 +176,32 @@ def create_or_update(
         return table.put(creator_updater(table.get(key)(vt)))(vt)
 
     return create_or_update_trans
+
+
+def write_item(
+    table: TypedTable[T], writer: Callable[[Optional[T]], Optional[T]], key: ItemKey
+) -> TransactionBuilder:
+    """The most general purpose single-item-write abstraction, with
+    necessarily weak type constraints on the writer implementation.
+
+    Note that in DynamoDB parlance, a write can be either a Put or a
+    Delete, and our usage of that terminology here parallels
+    theirs. Creation, Updating, and Deleting are all in view here.
+
+    Specifically, your writer function (as with all our other helpers
+    defined here) should return _exactly_ what it intends to have
+    represented in the database at the end of the transaction. If you
+    wish to make no change, simply return the unmodified item. If you
+    wish to _delete_ an item, return None - this indicates that you
+    want the value of the item to be null, i.e. deleted from the
+    table.
+    """
+
+    def write_single_item(vt: VersionedTransaction) -> VersionedTransaction:
+        resulting_item = writer(table.get(key)(vt))
+        if resulting_item is None:
+            return table.delete(key)(vt)
+        else:
+            return table.put(resulting_item)(vt)
+
+    return write_single_item
