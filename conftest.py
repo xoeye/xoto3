@@ -88,7 +88,7 @@ def integration_test_id_table_cleaner():
     _ = [i for i in table_cleaner]
 
 
-integration_test_id_table = pytest.fixture("module")(get_integration_test_id_table)
-integration_test_no_range_index_hash_key = pytest.fixture("module")(
+integration_test_id_table = pytest.fixture(scope="module")(get_integration_test_id_table)
+integration_test_no_range_index_hash_key = pytest.fixture(scope="module")(
     get_integration_test_no_range_key_index_hash_key
 )
