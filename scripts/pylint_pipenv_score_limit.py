@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 import argparse
 import os
-import sys
 import subprocess
-
-from pylint import lint
+import sys
 
 from pipenv_utils import get_pythonpath_for_pipfile_dir_and_venv
+from pylint import lint
 
 
 def module_passes_lint_score_limit(path, limit, other_args=()) -> bool:
     run = lint.Run([path, *other_args], do_exit=False)
-    score = run.linter.stats.get("global_note", -1.0)
+    score = run.linter.stats.global_note
 
     if score < limit:
         print(f"Score for {path} was {score:.03f}; less than limit {limit}")
