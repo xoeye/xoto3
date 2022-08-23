@@ -1,11 +1,10 @@
 """By importing this module, you request an attempt to set up an empty
 array of post-runtime hooks for your Lambda."""
-import typing as ty
 import sys
+import typing as ty
 from logging import getLogger
 
 from xoto3.utils.env import is_aws_env
-
 
 logger = getLogger(__name__)
 
@@ -44,9 +43,7 @@ def _noop(*_args, **_kwargs):
     pass
 
 
-def __py37_finalize_hook():
-    import bootstrap as aws_lambda_bootstrap  # pylint: disable=import-outside-toplevel
-
+def __install_post_invocation_hooks(aws_lambda_bootstrap):
     aws_lambda_bootstrap.LambdaRuntimeClient.post_invocation_result = _run_thunks_before_function(
         _POST_INVOCATION_RESULT_THUNKS
     )(aws_lambda_bootstrap.LambdaRuntimeClient.post_invocation_result)
@@ -67,8 +64,30 @@ def __setup_lambda_finalize_hook():
         return
 
     try:
+        aws_lambda_bootstrap = None
         if sys.version_info[0] == 3 and sys.version_info[1] == 7:
-            __py37_finalize_hook()
+            import bootstrap as _aws_lambda_bootstrap  # pylint: disable=import-outside-toplevel,import-error
+
+            aws_lambda_bootstrap = _aws_lambda_bootstrap
+        else:
+            try:
+                from awslambdaric import __version__  # pylint: disable=import-outside-toplevel
+
+                if __version__.split(".")[0] == "2":
+                    import awslambdaric.bootstrap as _aws_lambda_bootstrap  # pylint: disable=import-outside-toplevel,import-error
+
+                    aws_lambda_bootstrap = _aws_lambda_bootstrap
+                else:
+                    logger.error(
+                        f"Unimplemented for version of AWS Lambda Runtime Interface Client: {__version__}"
+                    )
+            except ImportError:
+                logger.error(
+                    "Failed to import awslambdaric. A new implementation might be needed for this runtime."
+                )
+
+        if aws_lambda_bootstrap is not None:
+            __install_post_invocation_hooks(aws_lambda_bootstrap)
         else:
             logger.error(
                 f"No Python-version-compatible Lambda Runtime hook implementation is available for {sys.version_info}"

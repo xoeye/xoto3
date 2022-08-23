@@ -1,3 +1,7 @@
+### 1.16.1
+
+- Fix xoto3.lam.finalize for Python > 3.7
+
 ## 1.16.0
 
 - `write_item` single item write helper for the `write_versioned`
