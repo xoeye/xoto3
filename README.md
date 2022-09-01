@@ -70,6 +70,9 @@ and no range key.
 `XOTO3_INTEGRATION_TEST_NO_RANGE_KEY_INDEX_HASH_KEY`: the name of an
 attribute which is the partition key of a GSI with no range key.
 
+If you don't currently have a table viable for testing, you can use the following script to easily create one:
+`pipenv run python ./scripts/create_integration_test_table.py`
+
 ## Development
 
 ### Writing tests
