@@ -2,8 +2,8 @@
 import os
 import timeit
 import typing as ty
+from concurrent.futures import ThreadPoolExecutor
 from logging import getLogger
-from multiprocessing.dummy import Pool as ThreadPool
 from typing import Iterable, List, Set, Tuple
 
 from xoto3.backoff import backoff
@@ -20,7 +20,9 @@ logger = getLogger(__name__)
 _BATCH_GET_CHUNKSIZE = int(os.environ.get("BATCH_GET_CHUNKSIZE", 1))
 _THREADPOOL_SIZE = int(os.environ.get("BATCH_GET_THREADPOOL_SIZE", 50))
 __DEFAULT_THREADPOOL: Lazy[ty.Any] = Lazy(
-    lambda: ThreadPool(_THREADPOOL_SIZE) if _THREADPOOL_SIZE else None
+    lambda: ThreadPoolExecutor(max_workers=_THREADPOOL_SIZE, thread_name_prefix=__name__)
+    if _THREADPOOL_SIZE
+    else None
 )
 
 _DYNAMODB_RESOURCE = tll_from_session(lambda sess: sess.resource("dynamodb"))
@@ -160,8 +162,8 @@ def BatchGetItemTupleKeys(
             )
 
         # threaded implementation
-        for batch in thread_pool.imap(
-            partial_get_single_batch, batches_of_100_iter, _BATCH_GET_CHUNKSIZE
+        for batch in thread_pool.map(
+            partial_get_single_batch, batches_of_100_iter, chunksize=_BATCH_GET_CHUNKSIZE
         ):
             for key_value_tuple, item in batch:
                 total_count += 1
@@ -228,7 +230,7 @@ def _get_single_batch(
         # log performance
         ms_elapsed = (timeit.default_timer() - start) * 1000
         logger.debug(
-            f"_get_single_batch on %s returned %d/%d items after %d ms; %.1f/s",
+            "_get_single_batch on %s returned %d/%d items after %d ms; %.1f/s",
             table_name,
             len(responses),
             len(table_request["Keys"]),
