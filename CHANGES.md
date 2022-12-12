@@ -1,3 +1,14 @@
+### 1.16.2
+
+- Switches `BatchGetItem`'s threadpool to `concurrent.futures.ThreadPoolExecutor`
+  to work in AWS Lambda environments running Python 3.8+
+- Adds `scripts/create_integration_test_table.py`; creates a DynamoDB table used
+  for running integration tests
+
+### 1.16.1
+
+- Fix xoto3.lam.finalize for Python > 3.7
+
 ## 1.16.0
 
 - `write_item` single item write helper for the `write_versioned`
