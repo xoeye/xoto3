@@ -11,7 +11,7 @@ typing-extensions = "*"
 
 [dev-packages]
 pytest = "~=7.1.0"
-mypy = ">=0.790"
+mypy = "==0.950"
 pylint = "~=2.7"
 pytest-cov = "*"
 pytest-xdist = "~=1.34"
