@@ -7,6 +7,13 @@ serverless development.
 These come from years of experience developing a serverless platform
 at XOi Technologies, and represent real production code.
 
+## Install
+Get started quickly by installing the package with pip.
+
+```
+pip install xoto3
+```
+
 ## Features
 
 Some of the features included:
