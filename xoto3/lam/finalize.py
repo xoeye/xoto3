@@ -1,5 +1,6 @@
 """By importing this module, you request an attempt to set up an empty
 array of post-runtime hooks for your Lambda."""
+
 import sys
 import typing as ty
 from logging import getLogger
@@ -73,7 +74,7 @@ def __setup_lambda_finalize_hook():
             try:
                 from awslambdaric import __version__  # pylint: disable=import-outside-toplevel
 
-                if __version__.split(".")[0] == "2":
+                if __version__.split(".")[0] in {"2", "3"}:
                     import awslambdaric.bootstrap as _aws_lambda_bootstrap  # pylint: disable=import-outside-toplevel,import-error
 
                     aws_lambda_bootstrap = _aws_lambda_bootstrap
