@@ -119,3 +119,6 @@ dmypy.json
 
 # IDE artifacts
 **/.idea
+
+# This package should work regardless of its dependencies - this is how consumers will use it
+poetry.lock

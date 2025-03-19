@@ -1,4 +1,5 @@
 """Utilities for BatchGets from DynamoDB"""
+
 import os
 import timeit
 import typing as ty
@@ -20,9 +21,11 @@ logger = getLogger(__name__)
 _BATCH_GET_CHUNKSIZE = int(os.environ.get("BATCH_GET_CHUNKSIZE", 1))
 _THREADPOOL_SIZE = int(os.environ.get("BATCH_GET_THREADPOOL_SIZE", 50))
 __DEFAULT_THREADPOOL: Lazy[ty.Any] = Lazy(
-    lambda: ThreadPoolExecutor(max_workers=_THREADPOOL_SIZE, thread_name_prefix=__name__)
-    if _THREADPOOL_SIZE
-    else None
+    lambda: (
+        ThreadPoolExecutor(max_workers=_THREADPOOL_SIZE, thread_name_prefix=__name__)
+        if _THREADPOOL_SIZE
+        else None
+    )
 )
 
 _DYNAMODB_RESOURCE = tll_from_session(lambda sess: sess.resource("dynamodb"))
@@ -141,7 +144,7 @@ def BatchGetItemTupleKeys(
         logger.debug("Performed 0 gets")
         # it's pretty wasteful to spin up a threadpool and start sending messages to it
         # if we have nothing to process.
-        return ()
+        return ()  # type: ignore
     if not dynamodb_resource and not thread_pool:
         # you didn't indicate you didn't want threads, so... here goes :)
         thread_pool = __DEFAULT_THREADPOOL()
@@ -260,7 +263,7 @@ def _kv_tuple_to_key(kv_tuple, key_names):
 
 
 def items_only(
-    key_item_pairs: ty.Iterable[ty.Union[KeyItemPair, KeyTupleItemPair]]
+    key_item_pairs: ty.Iterable[ty.Union[KeyItemPair, KeyTupleItemPair]],
 ) -> ty.Iterable[Item]:
     """Use with BatchGetItem if you just want the items that were
     found instead of the full iterable of all the keys you requested

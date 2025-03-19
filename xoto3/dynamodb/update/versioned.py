@@ -2,6 +2,7 @@
 
 to prevent simultaneous read-write conflicts.
 """
+
 import copy
 import os
 import random
@@ -12,7 +13,7 @@ from functools import partial
 from logging import getLogger
 
 from botocore.exceptions import ClientError
-from typing_extensions import Protocol
+from typing import Protocol
 
 from xoto3.dynamodb.constants import DEFAULT_ITEM_NAME
 from xoto3.dynamodb.exceptions import DynamoDbItemException, get_item_exception_type
@@ -67,8 +68,7 @@ class ItemUpdater(Protocol):
         add_attrs: ty.Optional[AttrDict] = None,
         delete_attrs: ty.Optional[AttrDict] = None,
         **update_args,
-    ) -> Item:
-        ...
+    ) -> Item: ...
 
 
 UpdateOrCreateItem = partial(UpdateItem, condition_exists=False)
@@ -174,7 +174,12 @@ def versioned_diffed_update_item(
                     table.name,
                     f"{sleep:.3f}",
                     extra=dict(
-                        json=dict(item_key=item_key, item_diff=item_diff, ce=str(ce), sleep=sleep,)
+                        json=dict(
+                            item_key=item_key,
+                            item_diff=item_diff,
+                            ce=str(ce),
+                            sleep=sleep,
+                        )
                     ),
                 )
             else:
@@ -248,5 +253,5 @@ def _nicename_getter(nicename: str, get_item: ItemGetter) -> ItemGetter:
         or get_item is GetItem
         or get_item is strongly_consistent_get_item_if_exists
     ):
-        return partial(get_item, nicename=nicename)
+        return partial(get_item, nicename=nicename)  # type: ignore
     return get_item

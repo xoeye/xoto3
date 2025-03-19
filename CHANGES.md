@@ -1,3 +1,13 @@
+### 2.0.0
+
+#### Breaking Changes
+
+`xoto3` is now built with Poetry 2.0 and drops support for Python versions 3.8 and below.
+
+#### Fixes
+
+- Fix/Enable xoto3.lam.finalize for awslambdaric 3.x, which seems to have been upgraded in the official AWS Lambda Python 3.9 runtime
+
 ### 1.16.2
 
 - Switches `BatchGetItem`'s threadpool to `concurrent.futures.ThreadPoolExecutor`

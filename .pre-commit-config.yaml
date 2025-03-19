@@ -28,29 +28,31 @@ repos:
     rev: 19.10b0
     hooks:
       - id: black
-        language_version: python3.7
+        language_version: python3.9
 
   - repo: local
     hooks:
-      - id: pytest-pipenv
-        name: pytest-pipenv
-        entry: pipenv run pytest tests
+      - id: pytest
+        name: pytest
+        entry: poetry run pytest tests
         language: system
         pass_filenames: false
 
-      - id: mypy-pipenv
-        name: mypy-pipenv
-        entry: scripts/pipenv_runner.py mypy
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy
         language: system
         types: [python]
         args:
           - --show-traceback
           - --ignore-missing-imports
           - --check-untyped-defs
-      - id: pylint-pipenv
-        name: pylint-pipenv
-        entry: scripts/precommit_pylint.py
+
+      - id: pylint
+        name: pylint
+        entry: poetry run pylint
         language: system
         types: [python]
         args:
           - --rcfile=.pylintrc
+          - --score-lower-limit 8.5

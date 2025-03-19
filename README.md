@@ -7,12 +7,9 @@ serverless development.
 These come from years of experience developing a serverless platform
 at XOi Technologies, and represent real production code.
 
-## Install
-Get started quickly by installing the package with pip.
+## Installing
 
-```
-pip install xoto3
-```
+Get started quickly by installing the package with `pip install xoto3`
 
 ## Features
 
@@ -64,9 +61,25 @@ Some highlights:
 - `pipe_multiprocessing` - a Process Pool for places like AWS Lambda
   where Python's built-in shared memory-dependent Pool does not work.
 
+## Development
+
+### Getting set up
+
+This repository leverages Poetry >= 2.0. Install it with `pip install poetry~=2.0`
+Then simply run `poetry install`. You'll want to periodically run `poetry update` as well.
+
+**The poetry.lock file** is not version-controlled, and shouldn't be (there's an argument to be made about pinning dev dependencies)
+
+### Versioning
+
+The version is kept in both `pyproject.toml` and `xoto3/__about__.py` for runtime use.
+We use [poetry-bumpversion](https://pypi.org/project/poetry-bumpversion/) to keep them in sync.
+
+Therefore, it's important for you to either change the version using the `poetry version (major|minor|patch|<x.y.z>` command, or edit both files manually.
+
 ## Testing
 
-You can run all unit tests with `pipenv run pytest tests`.
+You can run all unit tests with `poetry run pytest tests`.
 
 You can additionally include all the DynamoDB integration tests by
 setting some environment variables:
@@ -78,7 +91,7 @@ and no range key.
 attribute which is the partition key of a GSI with no range key.
 
 If you don't currently have a table viable for testing, you can use the following script to easily create one:
-`pipenv run python ./scripts/create_integration_test_table.py`
+`poetry run python ./scripts/create_integration_test_table.py`
 
 ## Development
 

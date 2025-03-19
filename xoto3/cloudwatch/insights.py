@@ -110,8 +110,8 @@ def insights_url_for_known_request(
     log_group_name: str,
     aws_request_id: str,
     relative_seconds: int = 3600 * 24,
-    start: datetime = None,
-    end: datetime = None,
+    start: ty.Optional[datetime] = None,
+    end: ty.Optional[datetime] = None,
     region: str = _DEFAULT_REGION,
 ) -> str:
     time_query = (
