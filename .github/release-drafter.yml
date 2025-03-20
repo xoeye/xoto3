@@ -22,7 +22,7 @@ categories:
       - "deprecated"
 exclude-labels:
   - "skip-changelog"
-name-template: "v$RESOLVED_VERSION"
+name-template: "$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 template: |
   ## Changes
