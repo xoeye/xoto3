@@ -1,4 +1,6 @@
 """Basic types for DynamoDB data and operations"""
+
+from abc import abstractmethod
 import typing as ty
 from decimal import Decimal
 
@@ -47,26 +49,26 @@ class TableResource:
 
     local_secondary_indexes: ty.Optional[ty.List[SecondaryIndex]]
 
-    def get_item(self, Key: ItemKey, **kwargs) -> dict:
-        ...
+    @abstractmethod
+    def get_item(self, Key: ItemKey, **kwargs) -> dict: ...
 
-    def update_item(self, TableName: str, Key: ItemKey, **kwargs) -> dict:
-        ...
+    @abstractmethod
+    def update_item(self, TableName: str, Key: ItemKey, **kwargs) -> dict: ...
 
-    def put_item(self, Item: InputItem, **kwargs) -> dict:
-        ...
+    @abstractmethod
+    def put_item(self, Item: InputItem, **kwargs) -> dict: ...
 
-    def batch_writer(self, overwrite_by_pkeys: ty.Optional[ty.List[str]]) -> ty.ContextManager:
-        ...
+    @abstractmethod
+    def batch_writer(self, overwrite_by_pkeys: ty.Optional[ty.List[str]]) -> ty.ContextManager: ...
 
-    def delete_item(self, Key: ItemKey, **kwargs) -> dict:
-        ...
+    @abstractmethod
+    def delete_item(self, Key: ItemKey, **kwargs) -> dict: ...
 
-    def query(self, *args, **kwargs) -> dict:
-        ...
+    @abstractmethod
+    def query(self, *args, **kwargs) -> dict: ...
 
-    def scan(self, *args, **kwargs) -> dict:
-        ...
+    @abstractmethod
+    def scan(self, *args, **kwargs) -> dict: ...
 
 
 AttrDict = ty.Dict[str, ty.Any]

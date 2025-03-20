@@ -27,10 +27,10 @@ jobs:
     environment: pypi
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.7
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
-          python-version: "3.7"
+          python-version: "3.9"
       - name: Set release notes name
         run: |
           export RELEASE_NAME_VERSION=${{ github.event.release.name }}
@@ -41,19 +41,11 @@ jobs:
       - name: Setup & Build
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pipenv
-          export PATH=/home/runner/.local/bin:$PATH
-          pipenv install --dev --skip-lock
-          python setup.py sdist
+          python -m pip install poetry
+          poetry build -fsdist
+
       - name: pypi-publish
-        uses: pypa/gh-action-pypi-publish@v1.4.2
+        uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-  sync_main:
-    needs: upload
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Sync main from detached head
-        run: git push origin HEAD:refs/heads/main --force

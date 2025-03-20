@@ -28,10 +28,10 @@ class Lazy(Generic[L]):
         subsequent calls will return it.
         """
         try:
-            return self.storage.value
+            return self.storage.value  # type: ignore
         except AttributeError:
-            self.storage.value = self.instance(*args, **kwargs)
-            return self.storage.value
+            self.storage.value = self.instance(*args, **kwargs)  # type: ignore
+            return self.storage.value  # type: ignore
 
     def copy(self) -> "Lazy[L]":
         """Each Lazy object is a self-contained singleton

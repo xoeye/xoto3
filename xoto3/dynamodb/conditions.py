@@ -28,7 +28,7 @@ def _get_key_name(key_or_schema: Union[ItemKey, PrimaryIndex]):
     return (
         _any_key_name(key_or_schema)
         if isinstance(key_or_schema, dict)
-        else hash_key_name(key_or_schema)
+        else hash_key_name(key_or_schema)  # type: ignore
     )
 
 
