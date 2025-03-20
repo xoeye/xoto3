@@ -15,7 +15,7 @@ jobs:
           python-version: 3.9
       - run: pip install poetry~=2.0
       - id: get-version
-        run: poetry version --short
+        run: echo version="$(poetry version --short)" >> $GITHUB_OUTPUT
       - uses: release-drafter/release-drafter@v5
         with:
           version: ${{ steps.get-version.outputs.version }}
