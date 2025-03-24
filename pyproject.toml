@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{ include = "xoto3" }]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = "^3.9"
 boto3 = ">=1.9"
 typing-extensions = "*"
 
