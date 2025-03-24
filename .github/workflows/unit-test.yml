@@ -10,17 +10,17 @@ env:
   AWS_SECRET_ACCESS_KEY: just_to_make_boto3_imports_work
 
 jobs:
-  unit-test:
+  mypy:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # Quoted otherwise treated as a float literal (3.10 == 3.1)
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -30,4 +30,24 @@ jobs:
       - run: poetry install
 
       - run: poetry run mypy xoto3
+
+  unit-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Quoted otherwise treated as a float literal (3.10 == 3.1)
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install poetry
+      - run: poetry env use ${{ matrix.python-version }}
+      - run: poetry install
+
       - run: poetry run pytest tests
