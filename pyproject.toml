@@ -14,7 +14,7 @@ typing-extensions = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.0"
-mypy = ">=1.15.0"
+mypy = "^1.15.0"
 pylint = "^2.7.0"
 pytest-cov = "*"
 pytest-xdist = "~=1.34"
