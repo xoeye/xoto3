@@ -1,3 +1,9 @@
+### 3.0.0
+
+#### Breaking Changes
+
+`xoto3` drops support for Python versions 3.11 and below.
+
 ### 2.0.1
 
 - Removed upper bound on python v3.11
