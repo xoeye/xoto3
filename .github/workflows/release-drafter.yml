@@ -9,14 +9,14 @@ jobs:
   update_release_draft:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.9
       - run: pip install poetry~=2.0
       - id: get-version
         run: echo version="$(poetry version --short)" >> $GITHUB_OUTPUT
-      - uses: release-drafter/release-drafter@v5
+      - uses: release-drafter/release-drafter@v7
         with:
           version: ${{ steps.get-version.outputs.version }}
         env:
