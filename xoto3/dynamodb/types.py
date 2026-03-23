@@ -1,10 +1,9 @@
 """Basic types for DynamoDB data and operations"""
 
-from abc import abstractmethod
 import typing as ty
+from abc import abstractmethod
 from decimal import Decimal
-
-from typing_extensions import Literal, TypedDict
+from typing import Literal, TypedDict
 
 KeyAttributeType = ty.Union[int, str, float, Decimal]
 ItemKey = ty.Mapping[str, KeyAttributeType]

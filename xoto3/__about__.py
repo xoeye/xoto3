@@ -1,4 +1,5 @@
 """xoto3"""
-__version__ = "2.0.1"
-__author__ = "Peter Gaultney"
-__author_email__ = "pgaultney@xoi.io"
+
+import importlib.metadata
+
+__version__ = importlib.metadata.version(__package__)

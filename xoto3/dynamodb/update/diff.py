@@ -1,18 +1,16 @@
-from typing import Dict, Any, Set, Optional
 from functools import partial
 from logging import getLogger
-from typing_extensions import TypedDict
+from typing import Any, Dict, Optional, Set, TypedDict
 
-from xoto3.dynamodb.types import InputItem, AttrDict, AttrInput
-from xoto3.dynamodb.utils.truth import dynamodb_truthy
 from xoto3.dynamodb.prewrite import (
+    RECOMMENDED_TRANSFORMS,
+    REQUIRED_TRANSFORMS,
+    SimpleTransform,
     map_tree,
     type_dispatched_transform,
-    REQUIRED_TRANSFORMS,
-    RECOMMENDED_TRANSFORMS,
-    SimpleTransform,
 )
-
+from xoto3.dynamodb.types import AttrDict, AttrInput, InputItem
+from xoto3.dynamodb.utils.truth import dynamodb_truthy
 
 logger = getLogger(__name__)
 

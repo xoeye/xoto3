@@ -1,6 +1,6 @@
 """Types for AWS things"""
 import typing as ty
-from typing_extensions import Protocol
+from typing import Protocol
 
 
 class LambdaContext(Protocol):

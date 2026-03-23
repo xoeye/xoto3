@@ -1,6 +1,5 @@
 import typing as ty
-
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from xoto3.lazy_session import tll_from_session
 from xoto3.paginate import (

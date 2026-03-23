@@ -1,14 +1,12 @@
-from typing import Optional, Iterable, Any
 import timeit
 from logging import getLogger
-from typing_extensions import TypedDict
+from typing import Any, Iterable, Optional, TypedDict
 
 from xoto3.backoff import backoff
 from xoto3.utils.iter import grouper_it
 
-from .types import InputItem, Item, ItemKey, TableResource
 from .prewrite import dynamodb_prewrite
-
+from .types import InputItem, Item, ItemKey, TableResource
 
 logger = getLogger(__name__)
 
