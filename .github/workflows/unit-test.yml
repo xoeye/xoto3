@@ -27,6 +27,13 @@ jobs:
       - name: Install poetry
         run: pipx install "poetry>=2.3,<2.4"
 
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-${{ matrix.python-version }}-
+
       - run: poetry sync
 
       - run: poetry run mypy xoto3
@@ -47,6 +54,13 @@ jobs:
 
       - name: Install poetry
         run: pipx install "poetry>=2.3,<2.4"
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-${{ matrix.python-version }}-
 
       - run: poetry sync
 
