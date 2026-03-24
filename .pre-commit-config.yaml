@@ -18,20 +18,20 @@ repos:
       - id: prettier
         exclude: .*\.html
 
+  - repo: https://github.com/PyCQA/isort
+    rev: "8.0.1" # must match pyproject.toml
+    hooks:
+      - id: isort
+        language_version: python3.12
+
+  - repo: https://github.com/psf/black
+    rev: "26.3.1" # must match pyproject.toml
+    hooks:
+      - id: black
+        language_version: python3.12
+
   - repo: local
     hooks:
-      - id: isort-poetry
-        name: isort-poetry
-        entry: poetry run isort
-        language: system
-        types: [python]
-
-      - id: black-poetry
-        name: black-poetry
-        entry: poetry run black
-        language: system
-        types: [python]
-
       - id: pytest
         name: pytest
         entry: poetry run pytest tests
