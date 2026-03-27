@@ -7,9 +7,9 @@ import functools
 import typing as ty
 from datetime import datetime
 from logging import getLogger
+from typing import TypedDict
 
 import botocore
-from typing_extensions import TypedDict
 
 from xoto3.lazy_session import tll_from_session
 

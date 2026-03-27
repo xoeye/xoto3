@@ -16,18 +16,25 @@ jobs:
       fail-fast: false
       matrix:
         # Quoted otherwise treated as a float literal (3.10 == 3.1)
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install poetry
-      - run: poetry env use ${{ matrix.python-version }}
-      - run: poetry install
+      - name: Install poetry
+        run: pipx install "poetry>=2.3,<2.4"
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-${{ matrix.python-version }}-
+
+      - run: poetry sync
 
       - run: poetry run mypy xoto3
 
@@ -37,17 +44,24 @@ jobs:
       fail-fast: false
       matrix:
         # Quoted otherwise treated as a float literal (3.10 == 3.1)
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install poetry
-      - run: poetry env use ${{ matrix.python-version }}
-      - run: poetry install
+      - name: Install poetry
+        run: pipx install "poetry>=2.3,<2.4"
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-${{ matrix.python-version }}-
+
+      - run: poetry sync
 
       - run: poetry run pytest tests

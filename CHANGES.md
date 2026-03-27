@@ -1,3 +1,9 @@
+### 2.1.0
+
+- Drop support for Python 3.9, 3.10, and 3.11; minimum is now Python 3.12
+- Add support for Python 3.13 and 3.14
+- Remove `typing-extensions` as a runtime dependency
+
 ### 2.0.1
 
 - Removed upper bound on python v3.11

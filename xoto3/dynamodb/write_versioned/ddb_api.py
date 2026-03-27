@@ -1,11 +1,11 @@
 """Private implementation details for versioned_transact_write_items"""
+
 from collections import defaultdict
 from functools import partial
 from logging import getLogger
-from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Mapping, Optional, Protocol, Set, Tuple, TypedDict, cast
 
 from botocore.exceptions import ClientError
-from typing_extensions import Protocol, TypedDict
 
 from xoto3.dynamodb.types import Item
 from xoto3.dynamodb.update.retry import is_conditional_update_retryable
@@ -99,12 +99,14 @@ class BatchGetResponse(TypedDict):
 
 
 class Boto3BatchGetItem(Protocol):
-    def __call__(self, RequestItems: Mapping[str, dict], **__kwargs) -> BatchGetResponse:
-        ...  # pragma: nocover
+    def __call__(
+        self, RequestItems: Mapping[str, dict], **__kwargs
+    ) -> BatchGetResponse: ...  # pragma: nocover
 
 
 def _ddb_batch_get_item(
-    batch_get_item: Boto3BatchGetItem, item_keys_by_table_name: ItemKeysByTableName,
+    batch_get_item: Boto3BatchGetItem,
+    item_keys_by_table_name: ItemKeysByTableName,
 ) -> ItemsByTableName:
     unprocessed_keys = {
         table_name: dict(Keys=item_keys, ConsistentRead=True)

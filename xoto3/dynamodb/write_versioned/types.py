@@ -6,12 +6,11 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     Union,
 )
-
-from typing_extensions import Protocol
 
 from xoto3.dynamodb.types import Item, ItemKey, KeyAttributeType, TableResource
 
@@ -52,10 +51,8 @@ class BatchGetItem(Protocol):
 
     def __call__(
         self, __item_keys_by_table_name: ItemKeysByTableName, **_kwargs
-    ) -> ItemsByTableName:
-        ...  # pragma: nocover
+    ) -> ItemsByTableName: ...  # pragma: nocover
 
 
 class TransactWriteItems(Protocol):
-    def __call__(self, *, TransactItems: List[dict], **_kwargs) -> Any:
-        ...  # pragma: nocover
+    def __call__(self, *, TransactItems: List[dict], **_kwargs) -> Any: ...  # pragma: nocover

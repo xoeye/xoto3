@@ -1,3 +1,6 @@
+[MAIN]
+fail-under=8.5
+
 [BASIC]
 max-line-length=120
 good-names=logger,_,i,j,k,__logger

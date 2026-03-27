@@ -6,15 +6,15 @@ utility.
 Capital-letter arguments are SSM Parameter store arguments, whereas
 lowercase arguments are for our internal logic.
 """
+
 import json
 import os
 import os.path
 import re
 from datetime import datetime
-from typing import Union
+from typing import Literal, Union
 
 from botocore.exceptions import ClientError
-from typing_extensions import Literal
 
 from xoto3.lazy_session import tll_from_session
 
@@ -31,7 +31,9 @@ try:
     import __main__ as main_func
 
     SCRIPT_NAME = os.path.basename(main_func.__file__)
-except Exception:  # pylint: disable=broad-except  # this is okay because getting the name is best-effort
+except (
+    Exception
+):  # pylint: disable=broad-except  # this is okay because getting the name is best-effort
     SCRIPT_NAME = "SSM Params"
 
 

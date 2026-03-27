@@ -1,8 +1,8 @@
 """DynamoDB Streams record processing types and utilities"""
+
 import typing as ty
 from logging import getLogger
-
-from typing_extensions import Literal
+from typing import Literal
 
 from xoto3.dynamodb.types import Item, ItemKey
 from xoto3.dynamodb.utils.serde import deserialize_item

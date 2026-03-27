@@ -2,11 +2,10 @@
 of "things you might want to iterate over" and "things that you might
 not want to block your thread on indefinitely.
 """
+
 import queue
 import time
-from typing import Callable, Iterable, Iterator, Optional, TypeVar
-
-from typing_extensions import Protocol
+from typing import Callable, Iterable, Iterator, Optional, Protocol, TypeVar
 
 X = TypeVar("X")
 Y_co = TypeVar("Y_co", covariant=True)

@@ -65,17 +65,14 @@ Some highlights:
 
 ### Getting set up
 
-This repository leverages Poetry >= 2.0. Install it with `pip install poetry~=2.0`
+This repository leverages Poetry >= 2.3. Install it with `pipx install "poetry>=2.3,<2.4"`
 Then simply run `poetry install`. You'll want to periodically run `poetry update` as well.
 
 **The poetry.lock file** is not version-controlled, and shouldn't be (there's an argument to be made about pinning dev dependencies)
 
 ### Versioning
 
-The version is kept in both `pyproject.toml` and `xoto3/__about__.py` for runtime use.
-We use [poetry-bumpversion](https://pypi.org/project/poetry-bumpversion/) to keep them in sync.
-
-Therefore, it's important for you to either change the version using the `poetry version (major|minor|patch|<x.y.z>` command, or edit both files manually.
+The version is set in `pyproject.toml`. Update it with `poetry version (major|minor|patch|<x.y.z>)`.
 
 ## Testing
 

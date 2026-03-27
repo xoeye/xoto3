@@ -2,8 +2,7 @@ import time
 import typing as ty
 from datetime import datetime
 from logging import getLogger
-
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from xoto3.paginate import PagePathsTemplate, yield_pages_from_operation
 
@@ -22,7 +21,10 @@ class FilteredLogEvent(LogEvent, total=False):
 
 
 CLOUDWATCH_LOGS_FILTER_LOG_EVENTS = PagePathsTemplate(
-    ("nextToken",), ("nextToken",), ("limit",), ("events",),
+    ("nextToken",),
+    ("nextToken",),
+    ("limit",),
+    ("events",),
 )
 
 

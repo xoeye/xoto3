@@ -14,9 +14,9 @@ exception thrown for the group. This may then be processed by
 application-level code, or may be wrapped by some other library
 primitive like the Dead Letter service.
 """
-import typing as ty
 
-from typing_extensions import Protocol, TypedDict
+import typing as ty
+from typing import Protocol, TypedDict
 
 from .types import Event, LambdaContext, LambdaEntryPoint, LambdaEntryPointDecorator
 
@@ -27,7 +27,12 @@ RecordProcessor = ty.Callable[[Record, int], ty.Any]
 RecordContainer = TypedDict("RecordContainer", {"Records": ty.List[Record]})
 RecordFailure = TypedDict(
     "RecordFailure",
-    {"record_index": int, "exception_name": str, "exception_str": str, "exception": Exception,},
+    {
+        "record_index": int,
+        "exception_name": str,
+        "exception_str": str,
+        "exception": Exception,
+    },
 )
 
 
@@ -94,8 +99,7 @@ class StreamProcessor(Protocol):
         record_index: int,
         event: Event,
         context: LambdaContext,
-    ) -> ty.Any:
-        ...
+    ) -> ty.Any: ...
 
 
 StreamProcessorDecorator = ty.Callable[[StreamProcessor], LambdaEntryPoint]
