@@ -40,17 +40,29 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
-        # Quoted otherwise treated as a float literal (3.10 == 3.1)
-        python-version: ["3.12", "3.13", "3.14"]
+        # Quoted otherwise the version is treated as a float literal (3.10 == 3.1).
+        # Ragged axis: awslambdaric 2.x wheels stop at cp312, 3.x at cp314, 4.x at
+        # cp315, so only installable (python, awslambdaric) pairs are listed.
+        include:
+          - { python-version: "3.12", awslambdaric: ">=2,<3" }
+          - { python-version: "3.12", awslambdaric: ">=3,<4" }
+          - { python-version: "3.13", awslambdaric: ">=3,<4" }
+          - { python-version: "3.14", awslambdaric: ">=3,<4" }
+          - { python-version: "3.12", awslambdaric: ">=4,<5" }
+          - { python-version: "3.13", awslambdaric: ">=4,<5" }
+          - { python-version: "3.14", awslambdaric: ">=4,<5" }
+          - { python-version: "3.15", awslambdaric: ">=4,<5", experimental: true }
     steps:
       - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
       - name: Install poetry
         run: pipx install "poetry>=2.3,<2.4"
@@ -63,5 +75,8 @@ jobs:
             ${{ runner.os }}-poetry-${{ matrix.python-version }}-
 
       - run: poetry sync
+
+      - name: Install awslambdaric ${{ matrix.awslambdaric }}
+        run: poetry run pip install "awslambdaric${{ matrix.awslambdaric }}"
 
       - run: poetry run pytest tests
