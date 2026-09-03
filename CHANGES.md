@@ -1,3 +1,7 @@
+### 2.1.1
+
+- Removed upper bound on python v3.15; the supported range is now `>=3.12,<4.0`
+
 ### 2.1.0
 
 - Drop support for Python 3.9, 3.10, and 3.11; minimum is now Python 3.12

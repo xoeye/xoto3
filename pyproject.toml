@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "xoto3"
-version = "2.1.0"
+version = "2.1.1"
 authors = ["Peter Gaultney <pgaultney@xoi.io>"]
 description = "High level utilities for a subset of boto3 operations common for AWS serverless development in Python."
 readme = "README.md"
 packages = [{ include = "xoto3" }]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<3.15"
+python = ">=3.12,<4.0"
 boto3 = ">=1.28.27"
 
 
