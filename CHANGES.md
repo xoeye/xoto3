@@ -1,3 +1,10 @@
+### 2.2.0
+
+- Add support for `awslambdaric` 4.x in `xoto3.lam.finalize`. 4.x relocated
+  `post_invocation_result`/`post_invocation_error` onto a shared
+  `BaseLambdaRuntimeClient`; the finalize hook now patches that base class so it
+  applies to both standard and multi-concurrent runtime clients.
+
 ### 2.1.1
 
 - Removed upper bound on python v3.15; the supported range is now `>=3.12,<4.0`

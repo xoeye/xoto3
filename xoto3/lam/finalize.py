@@ -44,14 +44,14 @@ def _noop(*_args, **_kwargs):
     pass
 
 
-def __install_post_invocation_hooks(aws_lambda_bootstrap):
-    aws_lambda_bootstrap.LambdaRuntimeClient.post_invocation_result = _run_thunks_before_function(
+def __install_post_invocation_hooks(runtime_client_class):
+    runtime_client_class.post_invocation_result = _run_thunks_before_function(
         _POST_INVOCATION_RESULT_THUNKS
-    )(aws_lambda_bootstrap.LambdaRuntimeClient.post_invocation_result)
+    )(runtime_client_class.post_invocation_result)
 
-    aws_lambda_bootstrap.LambdaRuntimeClient.post_invocation_error = _run_thunks_before_function(
+    runtime_client_class.post_invocation_error = _run_thunks_before_function(
         _POST_INVOCATION_ERROR_THUNKS
-    )(aws_lambda_bootstrap.LambdaRuntimeClient.post_invocation_error)
+    )(runtime_client_class.post_invocation_error)
 
 
 def __setup_lambda_finalize_hook():
@@ -67,10 +67,21 @@ def __setup_lambda_finalize_hook():
     try:
         from awslambdaric import __version__  # pylint: disable=import-outside-toplevel
 
-        if __version__.split(".")[0] in {"2", "3"}:
+        major = __version__.split(".")[0]
+        if major in {"2", "3"}:
             import awslambdaric.bootstrap as aws_lambda_bootstrap  # pylint: disable=import-outside-toplevel,import-error
 
-            __install_post_invocation_hooks(aws_lambda_bootstrap)
+            __install_post_invocation_hooks(aws_lambda_bootstrap.LambdaRuntimeClient)
+        elif major == "4":
+            # 4.x moved post_invocation_result/error onto BaseLambdaRuntimeClient,
+            # shared by LambdaRuntimeClient (standard mode) and
+            # LambdaMultiConcurrentRuntimeClient (multi-concurrent mode); patching the
+            # base class covers every runtime code path.
+            from awslambdaric.lambda_runtime_client import (  # pylint: disable=import-outside-toplevel,import-error
+                BaseLambdaRuntimeClient,
+            )
+
+            __install_post_invocation_hooks(BaseLambdaRuntimeClient)
         else:
             logger.error(
                 f"Unimplemented for version of AWS Lambda Runtime Interface Client: {__version__}, {sys.version_info=}"
